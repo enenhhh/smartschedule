@@ -1,0 +1,8 @@
+<resources>
+    <!-- 夜间模式使用深色主题 -->
+    <style name="Theme.smartschedule" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/brand_teal</item>
+        <item name="colorSecondary">@color/brand_teal</item>
+        <item name="colorTertiary">@color/brand_teal</item>
+    </style>
+</resources>

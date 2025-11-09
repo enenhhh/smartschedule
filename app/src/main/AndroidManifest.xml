@@ -1,0 +1,93 @@
+<manifest package="com.enenhhh.smartschedule"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+    <!-- 允许请求忽略电池优化 -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
+
+    <application
+        android:name=".App"
+        android:allowBackup="true"
+        android:label="智能课表"
+        android:icon="@drawable/ic_my_icon"
+        android:roundIcon="@drawable/ic_my_icon"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.smartschedule">
+
+        <activity
+            android:name=".OnboardingActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".EditScheduleActivity"
+            android:exported="false" />
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".services.KeepAliveService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <receiver
+            android:name=".receivers.TomorrowScheduleReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.enenhhh.smartschedule.ACTION_TOMORROW_SCHEDULE"/>
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".receivers.WeatherReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.enenhhh.smartschedule.ACTION_TOMORROW_WEATHER"/>
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".receivers.UpdatePersistentReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.enenhhh.smartschedule.ACTION_UPDATE_PERSISTENT"/>
+                <action android:name="android.intent.action.DATE_CHANGED"/>
+                <action android:name="android.intent.action.TIME_SET"/>
+                <action android:name="android.intent.action.TIMEZONE_CHANGED"/>
+                <action android:name="android.intent.action.USER_PRESENT"/>
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".receivers.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+            </intent-filter>
+        </receiver>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+</manifest>

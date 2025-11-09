@@ -1,0 +1,2 @@
+-keep class com.enenhhh.smartschedule.** { *; }
+-dontwarn org.jetbrains.annotations.**

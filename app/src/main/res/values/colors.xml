@@ -1,0 +1,7 @@
+<resources>
+    <!-- 主题主色改为蓝色 -->
+    <color name="brand_teal">#2196F3</color>
+    <color name="card_today">#332196F3</color>
+    <color name="card_tomorrow">#192196F3</color>
+    <color name="colorPrimary">#2196F3</color>
+</resources>
