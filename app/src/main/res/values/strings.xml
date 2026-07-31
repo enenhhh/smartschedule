@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  界面文案全部写在 Compose 代码里，这里只保留系统需要读取的字符串。
+-->
+<resources>
+    <string name="app_name">智能课表</string>
+</resources>

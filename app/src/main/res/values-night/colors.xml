@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 对应 Compose 的 DarkBackground / 中性色阶 -->
+    <color name="app_window_background">#111318</color>
+    <color name="app_surface">#111318</color>
+    <color name="app_on_surface">#E2E2E6</color>
+    <color name="app_surface_variant">#44464E</color>
+    <color name="app_on_surface_variant">#C4C6CF</color>
+    <color name="app_outline">#8E9099</color>
+
+    <!-- 主题色（靛蓝，与 IndigoDark 一致） -->
+    <color name="fluent_primary">#6CB6F0</color>
+    <color name="app_on_primary">#00325C</color>
+    <color name="app_primary_container">#004881</color>
+    <color name="app_on_primary_container">#D3E3FA</color>
+</resources>

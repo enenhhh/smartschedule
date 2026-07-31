@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  之前是整个应用 android:usesCleartextTraffic="true"，等于对所有域名放开明文。
+  这里收窄成：默认禁止明文，只有更新源 / 分享码服务所在的 enhub.top 走 http。
+  天气接口（open-meteo）本来就是 https，不受影响。
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">enhub.top</domain>
+    </domain-config>
+</network-security-config>

@@ -1,0 +1,145 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'org.jetbrains.kotlin.plugin.compose' version '2.3.10'
+}
+
+// 正式签名配置：从 keystore.properties 读取，该文件不进版本库。
+// 没有这个文件时下面的 signingConfig 不会创建，release 会打成未签名包，
+// 现有的构建流程不受影响。
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def hasKeystore = keystorePropertiesFile.exists()
+def keystoreProperties = new Properties()
+if (hasKeystore) {
+    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
+}
+
+android {
+    namespace "com.enenhhh.smartschedule"
+    compileSdkVersion 37
+
+    signingConfigs {
+        if (hasKeystore) {
+            release {
+                storeFile rootProject.file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
+
+    defaultConfig {
+        applicationId "com.enenhhh.smartschedule"
+        minSdkVersion 26
+        targetSdkVersion 34
+        versionCode 40
+        versionName "4.0"
+        vectorDrawables.useSupportLibrary = true
+
+        // 只保留实际用到的语言，剔除 appcompat/material 里其它几十种语言的字符串
+        resConfigs "zh", "en"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (hasKeystore) {
+                signingConfig signingConfigs.release
+            }
+        }
+        debug {
+            // 调试包保持不混淆，方便定位崩溃
+            minifyEnabled false
+            shrinkResources false
+        }
+    }
+
+    buildFeatures {
+        compose true
+        // 已全面 Compose 化，不再需要 viewBinding / BuildConfig 常量
+        viewBinding false
+        buildConfig false
+        resValues false
+        shaders false
+    }
+
+    packagingOptions {
+        resources {
+            excludes += [
+                    "META-INF/*.version",
+                    "META-INF/*.kotlin_module",
+                    "META-INF/DEPENDENCIES",
+                    "META-INF/LICENSE*",
+                    "META-INF/NOTICE*",
+                    "META-INF/AL2.0",
+                    "META-INF/LGPL2.1",
+                    "DebugProbesKt.bin",
+                    "kotlin-tooling-metadata.json"
+            ]
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    lint {
+        // 资源收缩后 lint 对未引用资源的告警没有意义
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}
+
+repositories {
+    // 国内镜像放前面；配合 gradle.properties 里的超时设置，
+    // 镜像挂了会快速失败并回退到下面的官方源，而不是无限期卡住。
+    maven { url 'https://maven.aliyun.com/repository/google' }
+    maven { url 'https://maven.aliyun.com/repository/central' }
+    maven { url 'https://maven.aliyun.com/repository/public' }
+    google()
+    mavenCentral()
+    // 原先还有 jitpack.io 和 jetbrains compose dev 两个源，
+    // 它们只为 Miuix 和 compose 编译器插件而存在；Miuix 已移除，
+    // compose 插件现在随 Kotlin 发行版从官方源获取，故一并删掉。
+}
+
+// 注意：这里原先有一段
+//     configurations.all { resolutionStrategy { force 'androidx.core:core:1.13.1' } }
+// 但 Compose BOM 2026.01 会把 activity 提升到 1.13.0，而 activity 1.13.0 是针对
+// core 1.18.0 编译的。把 core 强制压回 1.13.1 属于「编译期看不出来、运行时
+// NoSuchMethodError」的组合，已移除。
+
+dependencies {
+    implementation platform('androidx.compose:compose-bom:2026.01.00')
+
+    // ---- AndroidX 基础 ----
+    // 版本对齐 activity 1.13.0 的实际要求，不要往下压
+    implementation 'androidx.core:core-ktx:1.18.0'
+    // appcompat：ContextThemeWrapper（平台日期/时间选择器需要）
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    // material：XML 主题父级（Theme.Material3.DayNight）
+    implementation 'com.google.android.material:material:1.12.0'
+    // Compose BOM 并不管 activity-compose，必须显式写版本；
+    // 1.13.0 是和 core 1.18.0 配套的版本，不写会被传递依赖压到很旧的 1.8.0
+    implementation 'androidx.activity:activity-compose:1.13.0'
+    // BackupHelper 用 DocumentFile 读写用户选中的备份目录
+    implementation 'androidx.documentfile:documentfile:1.0.1'
+
+    // ---- Compose ----
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.ui:ui-graphics'
+    implementation 'androidx.compose.foundation:foundation'
+    implementation 'androidx.compose.material3:material3'
+    implementation 'androidx.compose.material:material-icons-extended'
+
+    // ---- 协程 ----
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+}

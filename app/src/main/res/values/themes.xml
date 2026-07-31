@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  应用界面已全面 Compose 化，XML 主题只剩两个职责：
+    1. 提供窗口背景，避免启动到首帧之间闪白/闪黑；
+    2. 给平台的 DatePickerDialog / TimePickerDialog 提供 Material 3 外观
+       （见 ContextThemeWrapper(context, R.style.Theme_smartschedule)）。
+  因此这里不再维护四套配色主题，配色统一由 ui/theme/Color.kt 负责。
+-->
+<resources>
+    <style name="Theme.smartschedule" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowBackground">@color/app_window_background</item>
+
+        <item name="colorPrimary">@color/fluent_primary</item>
+        <item name="colorOnPrimary">@color/app_on_primary</item>
+        <item name="colorPrimaryContainer">@color/app_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/app_on_primary_container</item>
+        <item name="colorSurface">@color/app_surface</item>
+        <item name="colorOnSurface">@color/app_on_surface</item>
+        <item name="colorSurfaceVariant">@color/app_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/app_on_surface_variant</item>
+        <item name="colorOutline">@color/app_outline</item>
+    </style>
+</resources>
