@@ -54,6 +54,12 @@ android {
             // 调试包保持不混淆，方便定位崩溃
             minifyEnabled false
             shrinkResources false
+
+            // 换成独立包名，让调试版和正式版能同时装在一台手机上。
+            // 否则两者签名不同，装调试版必须先卸载正式版（连带清空课表数据）。
+            // 数据目录、通知、闹钟也会因为包名不同而彼此隔离。
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-debug"
         }
     }
 
