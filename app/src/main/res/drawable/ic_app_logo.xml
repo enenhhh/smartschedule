@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  应用图标：原创矢量图形，仅由基础几何路径构成。
+  配色取自应用内的品牌渐变（#2196F3 -> #00BFA5）。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 渐变圆角底板 -->
+    <path android:pathData="M24,0h60a24,24 0 0 1 24,24v60a24,24 0 0 1 -24,24h-60a24,24 0 0 1 -24,-24v-60a24,24 0 0 1 24,-24z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0"
+                android:startY="0"
+                android:endX="108"
+                android:endY="108">
+                <item android:offset="0" android:color="#FF2196F3" />
+                <item android:offset="1" android:color="#FF00BFA5" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- 装订环 -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M38,20h6v16h-6zM64,20h6v16h-6z" />
+
+    <!-- 白色卡片 -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M32,28h44a8,8 0 0 1 8,8v42a8,8 0 0 1 -8,8h-44a8,8 0 0 1 -8,-8v-42a8,8 0 0 1 8,-8z" />
+
+    <!-- 表头分隔条 -->
+    <path
+        android:fillColor="#FF2196F3"
+        android:pathData="M24,46h60v4h-60z" />
+
+    <!-- 课程格子，右下一格用强调色表示「当前这节」 -->
+    <path
+        android:fillColor="#FFBBDEFB"
+        android:pathData="M32,57h9v8h-9zM49.5,57h9v8h-9zM67,57h9v8h-9zM32,71h9v8h-9zM49.5,71h9v8h-9z" />
+    <path
+        android:fillColor="#FF00BFA5"
+        android:pathData="M67,71h9v8h-9z" />
+</vector>
