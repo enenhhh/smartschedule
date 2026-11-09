@@ -1,0 +1,60 @@
+/* 复刻的应用界面样式，取自宣传片 stage.css（坐标系 694 × 1534，与真实截图一一对应）。 */
+.app{--p:#00668c;--pc:#cfecff;--sc:#d2e5f4;--on:#191c1e;--onv:#41484d;--outline:#71787e;line-height:normal;text-align:left;letter-spacing:normal}
+/* 触点：白色圆点 + 按下涟漪 */
+.touch{position:absolute;left:0;top:0;width:76px;height:76px;margin:-38px 0 0 -38px;z-index:60;pointer-events:none}
+.touch .dot{position:absolute;inset:0;border-radius:50%;background:rgba(255,255,255,.78);
+  border:2px solid rgba(255,255,255,.95);box-shadow:0 10px 26px rgba(10,30,60,.30),inset 0 0 0 1px rgba(0,0,0,.04)}
+.touch .ring{position:absolute;inset:0;border-radius:50%;border:3px solid rgba(255,255,255,.9);opacity:0}
+
+/* ======================================================================
+   复刻的应用界面。坐标系 = 截图缩放到 694 宽（694 × 1534），与真实截图一一对应。
+   ====================================================================== */
+.app{position:absolute;left:0;top:0;width:694px;height:1534px;overflow:hidden;transform-origin:0 0;
+  font-family:"GSF","NSC",sans-serif;color:var(--on);
+  background:radial-gradient(120% 70% at 0% 0%,#d6e9ff 0%,rgba(214,233,255,0) 60%),
+             radial-gradient(90% 60% at 100% 35%,#e8e6fb 0%,rgba(232,230,251,0) 65%),
+             linear-gradient(180deg,#e0edfb 0%,#e7eef9 55%,#e9eef8 100%)}
+.app .a{position:absolute}
+.app .sb{position:absolute;left:0;right:0;top:0;height:70px;z-index:6}
+.app .sb .tm{position:absolute;left:34px;top:18px;font-size:26px;font-weight:500;letter-spacing:.02em;color:#2a2d31}
+.app .sb .ic{position:absolute;right:30px;top:22px;display:flex;gap:12px;align-items:center}
+.app .h1{font-size:38px;font-weight:650;letter-spacing:-.01em}
+.app .h2{font-size:30px;font-weight:600}
+.app .t18{font-size:18px;color:var(--onv)}
+.app .t16{font-size:16px;color:var(--onv)}
+.app .t14{font-size:14.5px;color:var(--onv)}
+.app .t22{font-size:22px}
+.app .sec{font-size:18px;color:var(--p);font-weight:500}
+.app .card{position:absolute;border-radius:36px;background:rgba(244,248,255,.80);border:1.5px solid rgba(255,255,255,.85);
+  box-shadow:0 10px 30px -18px rgba(30,60,110,.25)}
+.app .hero{position:absolute;border-radius:40px;background:linear-gradient(160deg,#d4eeff,#c7e7fb);border:1.5px solid rgba(255,255,255,.7);
+  box-shadow:0 12px 34px -20px rgba(0,90,140,.35)}
+.app .topbar{position:absolute;left:0;right:0;top:0;height:160px;border-radius:0 0 44px 44px;
+  background:rgba(232,240,251,.97);-webkit-backdrop-filter:blur(26px) saturate(1.2);backdrop-filter:blur(26px) saturate(1.2);z-index:5;border-bottom:1.5px solid rgba(255,255,255,.8);box-shadow:0 8px 24px -16px rgba(30,60,110,.3)}
+.app .seg{position:absolute;height:62px;border-radius:31px;border:2px solid var(--outline);display:flex;overflow:hidden;font-size:20px}
+.app .seg .o{flex:1;display:flex;align-items:center;justify-content:center;gap:10px;position:relative;z-index:1}
+.app .seg .o+.o{border-left:2px solid var(--outline)}
+.app .seg .ind{position:absolute;top:0;bottom:0;left:0;background:var(--sc);z-index:0}
+.app .cell{position:absolute;border-radius:18px;display:grid;place-items:center;font-size:22px;color:#1c1b1f}
+.app .mr{background:#e8e4ff;border-radius:12px;font-size:15px}
+.app .nav{position:absolute;left:32px;right:32px;top:1414px;height:104px;border-radius:52px;background:rgba(238,243,252,.82);
+  border:1.5px solid rgba(255,255,255,.9);box-shadow:0 12px 30px -16px rgba(30,60,110,.3)}
+.app .nav .it{position:absolute;top:14px;width:84px;margin-left:-42px;text-align:center;font-size:14px;color:#2a2d31}
+.app .nav .it .pl{width:84px;height:46px;border-radius:23px;display:grid;place-items:center;margin:0 auto 6px}
+.app .nav .it.on .pl{background:#c4e6fb}
+.app .btnp{position:absolute;border-radius:999px;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;gap:12px;font-size:20px;font-weight:500}
+.app .btnt{position:absolute;border-radius:999px;background:#cfe3f1;color:#0c2e40;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:500}
+.app .circ{position:absolute;border-radius:50%;background:#cfe3f1;display:grid;place-items:center}
+.app .div{position:absolute;height:1.5px;background:rgba(113,120,126,.25)}
+.app .scrim{position:absolute;inset:0;background:#4d5b66;opacity:0}
+.app .sheet{position:absolute;left:0;right:0;border-radius:44px 44px 0 0;background:rgba(222,229,237,.97);
+  box-shadow:0 -12px 40px -16px rgba(20,40,70,.35);border-top:1.5px solid rgba(255,255,255,.8)}
+.app .sheet .grab{position:absolute;left:50%;top:14px;width:56px;height:7px;margin-left:-28px;border-radius:4px;background:#a9b2ba}
+.app .dlg{position:absolute;border-radius:40px;background:rgba(222,229,237,.98);box-shadow:0 30px 60px -20px rgba(20,40,70,.45);border:1.5px solid rgba(255,255,255,.8)}
+.app .snack{position:absolute;left:40px;right:40px;height:72px;border-radius:18px;background:#2e3135;color:#eef1f4;font-size:20px;display:flex;align-items:center;padding:0 26px;gap:14px;
+  box-shadow:0 14px 30px -10px rgba(0,0,0,.4)}
+.app .field{position:absolute;border:2px solid var(--outline);border-radius:22px}
+.app .field label{position:absolute;left:18px;top:-12px;padding:0 6px;font-size:14px;color:var(--onv);background:#e3eaf3}
+.app .cchip{display:inline-flex;align-items:center;height:48px;padding:0 18px;border-radius:14px;font-size:19px;color:#1c1b1f}
+.app .sw{position:absolute;width:80px;height:48px;border-radius:24px;background:var(--p)}
+.app .sw i{position:absolute;right:7px;top:6px;width:36px;height:36px;border-radius:50%;background:#fff}

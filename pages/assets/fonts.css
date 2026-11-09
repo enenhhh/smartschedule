@@ -1,0 +1,3 @@
+/* 官网字体：Google Sans Flex（西文、数字）+ Noto Sans SC（中文），均为 SIL OFL，已按页面用字裁剪（tools/subset_fonts.py）。 */
+@font-face{font-family:"GSF";src:url("fonts/gsf.woff2") format("woff2");font-weight:300 800;font-display:swap}
+@font-face{font-family:"NSC";src:url("fonts/nsc.woff2") format("woff2");font-weight:300 800;font-display:swap}
