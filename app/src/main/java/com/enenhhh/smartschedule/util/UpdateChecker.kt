@@ -1,225 +1,166 @@
 package com.enenhhh.smartschedule.util
 
-import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
-import android.widget.Toast
 import androidx.core.content.FileProvider
 import com.enenhhh.smartschedule.notifications.NotificationHelper
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
-import kotlin.concurrent.thread
 
+/**
+ * 应用内更新（纯 HTTPS）。
+ * update.txt 第一行是最新版本号，其余为更新说明（Markdown）；APK 位于 `${baseUrl}${version}.apk`。
+ */
 object UpdateChecker {
 
     data class Source(val name: String, val baseUrl: String)
 
     val sources = listOf(
-        Source("博客源", "http://blog.enhub.top/files/smartschedule/"),
+        Source("博客源", "https://blog.enhub.top/files/smartschedule/"),
         Source("备用源", "https://enhub.top/files/smartschedule/")
     )
 
-    private var selectedSourceIndex = 0
+    data class UpdateInfo(val latest: String, val changelog: String, val apkUrl: String, val source: Source)
 
-    fun getSelectedSource(): Source = sources[selectedSourceIndex]
-    fun getSelectedSourceIndex(): Int = selectedSourceIndex
-    fun setSelectedSource(index: Int) { selectedSourceIndex = index.coerceIn(0, sources.lastIndex) }
+    data class SourceTestResult(val source: Source, val latencyMs: Long?, val latest: String?, val error: String?)
 
-    private fun httpGet(url: String): String {
-        // 注意：这里必须走系统默认的证书校验。
-        // 之前的版本对 HTTPS 关闭了证书 / 主机名校验，而这条链路最终会
-        // 下载并安装 APK，等于给中间人留了直接投毒的口子。
+    sealed interface CheckResult {
+        data class UpdateAvailable(val info: UpdateInfo) : CheckResult
+        data class UpToDate(val latest: String) : CheckResult
+        data class Failed(val message: String) : CheckResult
+    }
+
+    const val AUTO_CHECK_INTERVAL_MS = 12L * 60 * 60 * 1000
+
+    fun currentVersion(ctx: Context): String =
+        runCatching { ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName ?: "0" }.getOrDefault("0")
+
+    private fun httpGet(url: String, timeoutMs: Int = 8000): String {
         val conn = URL(url).openConnection() as HttpURLConnection
-        conn.connectTimeout = 8000
-        conn.readTimeout = 8000
+        if (conn !is javax.net.ssl.HttpsURLConnection) throw IllegalStateException("只允许 HTTPS 更新源")
+        conn.connectTimeout = timeoutMs
+        conn.readTimeout = timeoutMs
         conn.requestMethod = "GET"
+        conn.setRequestProperty("User-Agent", "smartschedule/5.1 (Android)")
         return try {
             val code = conn.responseCode
-            val stream = if (code in 200..299) conn.inputStream else conn.errorStream
-            stream.bufferedReader().use { it.readText() }
+            if (code !in 200..299) throw IllegalStateException("HTTP $code")
+            conn.inputStream.bufferedReader().use { it.readText() }
         } finally {
             conn.disconnect()
         }
     }
 
-    private fun compareVersion(a: String, b: String): Int {
-        fun parse(v: String) = v.split(".").map { it.toIntOrNull() ?: 0 }
-        val A = parse(a); val B = parse(b)
-        val n = maxOf(A.size, B.size)
-        for (i in 0 until n) {
-            val ai = if (i < A.size) A[i] else 0
-            val bi = if (i < B.size) B[i] else 0
-            if (ai != bi) return ai - bi
+    fun compareVersion(a: String, b: String): Int {
+        fun parse(v: String) = v.trim().removePrefix("v").split(".").map { it.filter { c -> c.isDigit() }.toIntOrNull() ?: 0 }
+        val pa = parse(a); val pb = parse(b)
+        for (i in 0 until maxOf(pa.size, pb.size)) {
+            val x = pa.getOrElse(i) { 0 }; val y = pb.getOrElse(i) { 0 }
+            if (x != y) return x.compareTo(y)
         }
         return 0
     }
 
-    data class UpdateInfo(val latest: String, val changelog: String, val apkUrl: String)
-    data class SourceTestResult(val source: Source, val latency: Long, val latestVersion: String, val error: String?)
-
-    private fun parseUpdateText(text: String, baseUrl: String): UpdateInfo? {
-        val lines = text.split("\n")
-        if (lines.isEmpty()) return null
-        val latest = lines.first().trim()
-        if (latest.isBlank()) return null
+    private fun parseUpdateText(text: String, source: Source): UpdateInfo? {
+        val lines = text.trim().lines()
+        val latest = lines.firstOrNull()?.trim().orEmpty()
+        if (latest.isBlank() || latest.length > 20 || !latest.first().isDigit()) return null
         val log = lines.drop(1).joinToString("\n").trim()
-        return UpdateInfo(latest, log, "${baseUrl}${latest}.apk")
+        return UpdateInfo(latest, log, "${source.baseUrl}${latest}.apk", source)
+    }
+
+    suspend fun check(ctx: Context, sourceIndex: Int = Prefs.getUpdateSource(ctx)): CheckResult = withContext(Dispatchers.IO) {
+        val order = sources.indices.sortedBy { if (it == sourceIndex.coerceIn(sources.indices)) 0 else 1 }
+        var lastError: String? = null
+        for (i in order) {
+            val src = sources[i]
+            try {
+                val info = parseUpdateText(httpGet("${src.baseUrl}update.txt"), src) ?: throw IllegalStateException("更新信息格式错误")
+                Prefs.setLastUpdateCheck(ctx, System.currentTimeMillis())
+                return@withContext if (compareVersion(info.latest, currentVersion(ctx)) > 0) CheckResult.UpdateAvailable(info)
+                else CheckResult.UpToDate(info.latest)
+            } catch (e: Exception) {
+                lastError = "${src.name}：${e.message ?: e.javaClass.simpleName}"
+            }
+        }
+        CheckResult.Failed(lastError ?: "无法连接更新服务器")
+    }
+
+    suspend fun testAllSources(): List<SourceTestResult> = withContext(Dispatchers.IO) {
+        sources.map { src ->
+            val start = System.currentTimeMillis()
+            try {
+                val text = httpGet("${src.baseUrl}update.txt", 6000)
+                val info = parseUpdateText(text, src)
+                SourceTestResult(src, System.currentTimeMillis() - start, info?.latest, null)
+            } catch (e: Exception) {
+                SourceTestResult(src, null, null, e.message ?: e.javaClass.simpleName)
+            }
+        }
     }
 
     /**
-     * 测试所有源的延迟和最新版本
+     * 下载 APK 到 app 专属目录并返回文件。[onProgress] 0..1，总大小未知时传 -1。
      */
-    fun testAllSources(): List<SourceTestResult> {
-        return sources.map { source ->
-            try {
-                val start = System.currentTimeMillis()
-                val content = httpGet("${source.baseUrl}update.txt")
-                val latency = System.currentTimeMillis() - start
-                val info = parseUpdateText(content, source.baseUrl)
-                SourceTestResult(source, latency, info?.latest ?: "未知", null)
-            } catch (e: Exception) {
-                SourceTestResult(source, -1, "未知", e.message ?: "连接失败")
-            }
-        }
-    }
-
-    fun checkAndPrompt(activity: Activity, manual: Boolean) {
-        thread {
-            try {
-                val source = getSelectedSource()
-                val content = httpGet("${source.baseUrl}update.txt")
-                val info = parseUpdateText(content, source.baseUrl) ?: run {
-                    if (manual) activity.runOnUiThread {
-                        Toast.makeText(activity, "未获取到更新信息", Toast.LENGTH_SHORT).show()
-                    }
-                    return@thread
-                }
-                val pInfo = activity.packageManager.getPackageInfo(activity.packageName, 0)
-                val current = pInfo.versionName ?: "1.0"
-                val need = compareVersion(info.latest, current) > 0
-                activity.runOnUiThread {
-                    if (need) {
-                        showUpdateDialog(activity, info, current)
-                    } else if (manual) {
-                        Toast.makeText(activity, "已是最新版本（$current）", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            } catch (e: Exception) {
-                if (manual) {
-                    activity.runOnUiThread {
-                        Toast.makeText(activity, "检查更新失败：${e.message ?: "网络错误"}", Toast.LENGTH_LONG).show()
-                    }
-                }
-            }
-        }
-    }
-
-    fun downloadLatestApk(activity: Activity) {
-        thread {
-            try {
-                val source = getSelectedSource()
-                val content = httpGet("${source.baseUrl}update.txt")
-                val info = parseUpdateText(content, source.baseUrl) ?: run {
-                    activity.runOnUiThread {
-                        Toast.makeText(activity, "未获取到更新信息", Toast.LENGTH_SHORT).show()
-                    }
-                    return@thread
-                }
-                activity.runOnUiThread { downloadAndInstall(activity, info) }
-            } catch (e: Exception) {
-                activity.runOnUiThread {
-                    Toast.makeText(activity, "下载失败：${e.message ?: "网络错误"}", Toast.LENGTH_LONG).show()
-                }
-            }
-        }
-    }
-
-    private fun showUpdateDialog(activity: Activity, info: UpdateInfo, current: String) {
-        android.app.AlertDialog.Builder(activity)
-            .setTitle("发现新版本 ${info.latest}")
-            .setMessage("当前版本：$current\n\n更新日志：\n${info.changelog.ifBlank { "（无）" }}")
-            .setPositiveButton("更新") { _, _ -> downloadAndInstall(activity, info) }
-            .setNegativeButton("稍后", null)
-            .show()
-    }
-
-    private fun downloadAndInstall(activity: Activity, info: UpdateInfo) {
-        val progressBar = android.widget.ProgressBar(activity, null, android.R.attr.progressBarStyleHorizontal).apply {
-            max = 100; isIndeterminate = false
-        }
-        val tvPercent = android.widget.TextView(activity).apply {
-            text = "0%"; setPadding(0, 16, 0, 0); gravity = android.view.Gravity.CENTER
-        }
-        val container = android.widget.LinearLayout(activity).apply {
-            orientation = android.widget.LinearLayout.VERTICAL; setPadding(48, 24, 48, 8)
-            addView(progressBar); addView(tvPercent)
-        }
-        val dialog = androidx.appcompat.app.AlertDialog.Builder(activity)
-            .setTitle("正在下载").setView(container).setCancelable(false).create()
-        dialog.show()
-
-        thread {
-            try {
-                val url = URL(info.apkUrl)
-                val conn = url.openConnection() as HttpURLConnection
-                conn.connectTimeout = 15000; conn.readTimeout = 15000; conn.requestMethod = "GET"; conn.connect()
-                val total = conn.contentLength.coerceAtLeast(1)
-                val dir = activity.getExternalFilesDir("downloads") ?: activity.filesDir
-                if (!dir.exists()) dir.mkdirs()
-                val file = File(dir, "smartschedule_${info.latest}.apk")
-                conn.inputStream.use { input ->
-                    FileOutputStream(file).use { out ->
-                        val buf = ByteArray(8192); var read: Int; var sum = 0L
-                        while (input.read(buf).also { read = it } != -1) {
-                            out.write(buf, 0, read); sum += read
-                            val p = (sum * 100 / total).toInt().coerceIn(0, 100)
-                            activity.runOnUiThread { progressBar.progress = p; tvPercent.text = "$p%" }
-                        }
-                        out.flush()
-                    }
-                }
-                activity.runOnUiThread { dialog.dismiss() }
-                NotificationHelper.notifyApkDownloaded(activity, file, info.latest)
-                tryInstallApk(activity, file)
-            } catch (e: Exception) {
-                activity.runOnUiThread {
-                    dialog.dismiss()
-                    Toast.makeText(activity, "下载失败：${e.message ?: "网络错误"}", Toast.LENGTH_LONG).show()
-                }
-            }
-        }
-    }
-
-    private fun tryInstallApk(activity: Activity, file: File) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            if (!activity.packageManager.canRequestPackageInstalls()) {
-                try {
-                    activity.startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
-                        data = Uri.parse("package:${activity.packageName}"); addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    })
-                    Toast.makeText(activity, "请允许安装未知应用，然后点击通知完成安装", Toast.LENGTH_LONG).show()
-                } catch (_: ActivityNotFoundException) { installApk(activity, file) }
-                return
-            }
-        }
-        installApk(activity, file)
-    }
-
-    private fun installApk(ctx: Context, file: File) {
+    suspend fun download(ctx: Context, info: UpdateInfo, onProgress: (Float) -> Unit): File = withContext(Dispatchers.IO) {
+        val conn = URL(info.apkUrl).openConnection() as HttpURLConnection
+        if (conn !is javax.net.ssl.HttpsURLConnection) throw IllegalStateException("只允许 HTTPS 下载")
+        conn.connectTimeout = 15000
+        conn.readTimeout = 30000
+        conn.requestMethod = "GET"
+        conn.connect()
+        if (conn.responseCode !in 200..299) throw IllegalStateException("HTTP ${conn.responseCode}")
+        val total = conn.contentLengthLong
+        val dir = ctx.getExternalFilesDir("downloads") ?: ctx.filesDir
+        if (!dir.exists()) dir.mkdirs()
+        val file = File(dir, "smartschedule_${info.latest.filter { it.isLetterOrDigit() || it == '.' }}.apk")
         try {
-            val uri = FileProvider.getUriForFile(ctx, "${ctx.packageName}.fileprovider", file)
-            ctx.startActivity(Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "application/vnd.android.package-archive")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
-            })
-        } catch (e: Exception) {
-            Toast.makeText(ctx, "安装失败：${e.message}", Toast.LENGTH_LONG).show()
+            conn.inputStream.use { input ->
+                FileOutputStream(file).use { out ->
+                    val buf = ByteArray(16 * 1024)
+                    var sum = 0L
+                    while (true) {
+                        val n = input.read(buf)
+                        if (n < 0) break
+                        out.write(buf, 0, n)
+                        sum += n
+                        onProgress(if (total > 0) (sum.toFloat() / total).coerceIn(0f, 1f) else -1f)
+                    }
+                    out.flush()
+                }
+            }
+        } finally {
+            conn.disconnect()
         }
+        if (file.length() < 100 * 1024) { file.delete(); throw IllegalStateException("下载的文件不完整") }
+        runCatching { NotificationHelper.notifyApkDownloaded(ctx, file, info.latest) }
+        file
+    }
+
+    /** 返回 false 表示需要用户先授予「安装未知应用」权限（已跳转设置页） */
+    fun install(ctx: Context, file: File): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !ctx.packageManager.canRequestPackageInstalls()) {
+            try {
+                ctx.startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                    data = Uri.parse("package:${ctx.packageName}")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                })
+                return false
+            } catch (_: ActivityNotFoundException) { }
+        }
+        val uri = FileProvider.getUriForFile(ctx, "${ctx.packageName}.fileprovider", file)
+        ctx.startActivity(Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+        })
+        return true
     }
 }

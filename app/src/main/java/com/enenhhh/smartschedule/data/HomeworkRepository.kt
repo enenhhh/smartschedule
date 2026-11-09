@@ -1,6 +1,9 @@
 package com.enenhhh.smartschedule.data
 
 import android.content.Context
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -67,6 +70,14 @@ data class Homework(
 
 class HomeworkRepository(private val context: Context) {
 
+    companion object {
+        /** 任何写入都会 +1；Compose 侧用 remember(HomeworkRepository.version) 触发刷新 */
+        var version by mutableIntStateOf(0)
+            private set
+
+        fun bumpVersion() { version++ }
+    }
+
     private val file: File by lazy {
         File(context.getExternalFilesDir(null), "homework.json")
     }
@@ -77,7 +88,32 @@ class HomeworkRepository(private val context: Context) {
         if (file.exists()) load()
     }
 
+    fun getAll(): List<Homework> = items.toList()
+
     fun getPending(): List<Homework> = items.filter { !it.completed }.sortedBy { it.deadline }
+
+    /** 外部（导入/恢复备份）直接改了文件之后调用，重新读取并通知界面 */
+    fun reload() {
+        items.clear()
+        if (file.exists()) load()
+        bumpVersion()
+    }
+
+    /** 整体替换（导入备份用） */
+    fun replaceAll(list: List<Homework>) {
+        items.clear()
+        items.addAll(list)
+        persist()
+    }
+
+    /** 合并：同 id 覆盖，其余追加 */
+    fun mergeAll(list: List<Homework>) {
+        list.forEach { hw ->
+            val idx = items.indexOfFirst { it.id == hw.id }
+            if (idx >= 0) items[idx] = hw else items.add(hw)
+        }
+        persist()
+    }
 
     fun getCompleted(): List<Homework> = items.filter { it.completed }.sortedByDescending { it.deadline }
 
@@ -122,6 +158,10 @@ class HomeworkRepository(private val context: Context) {
     private fun persist() {
         val arr = JSONArray()
         items.forEach { arr.put(it.toJson()) }
-        file.writeText(arr.toString(2))
+        runCatching {
+            file.parentFile?.mkdirs()
+            file.writeText(arr.toString(2))
+        }
+        bumpVersion()
     }
 }

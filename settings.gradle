@@ -1,5 +1,7 @@
 pluginManagement {
     repositories {
+        google()
+        mavenCentral()
         maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
         maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://maven.aliyun.com/repository/central' }
@@ -14,6 +16,8 @@ dependencyResolutionManagement {
     // app/build.gradle 里声明的 repositories 优先
     repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
     repositories {
+        google()
+        mavenCentral()
         maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://maven.aliyun.com/repository/central' }
         google()

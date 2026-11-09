@@ -7,6 +7,7 @@ import com.enenhhh.smartschedule.notifications.NotificationHelper
 
 class WeatherReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
+        if (!com.enenhhh.smartschedule.legal.LegalConsent.isAccepted(context)) return
         // 广播的 onReceive 结束后进程可能被回收，用 goAsync 撑住这次网络请求
         val pending = goAsync()
         Thread {

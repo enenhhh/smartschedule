@@ -1,54 +1,56 @@
 package com.enenhhh.smartschedule
 
-import android.Manifest
-import android.content.Intent
-import android.os.Build
 import android.os.Bundle
+import com.enenhhh.smartschedule.legal.LegalConsent
+import com.enenhhh.smartschedule.ui.legal.LegalConsentScreen
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.app.NotificationManagerCompat
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.enenhhh.smartschedule.data.TempSwaps
 import com.enenhhh.smartschedule.notifications.NotificationHelper
 import com.enenhhh.smartschedule.ui.app.SmartScheduleApp
+import com.enenhhh.smartschedule.ui.settings.UpdateDialog
 import com.enenhhh.smartschedule.ui.theme.AppTheme
-import com.enenhhh.smartschedule.util.FontManager
 import com.enenhhh.smartschedule.util.Prefs
 import com.enenhhh.smartschedule.util.UpdateChecker
 
+/**
+ * 唯一的 Activity。所有页面都是 Compose，由 [SmartScheduleApp] 内部导航。
+ */
 class MainActivity : ComponentActivity() {
-
-    private val requestNotifPermission = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            NotificationHelper.createChannels(this)
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-
-        if (!Prefs.isFirstRunDone(this)) {
-            startActivity(Intent(this, OnboardingActivity::class.java))
-            finish()
-            return
-        }
-
-        FontManager.init(this)
-        NotificationHelper.createChannels(this)
-        requestNotificationPermissionIfNeeded()
-
-        if (Prefs.isAutoCheckUpdate(this)) {
-            UpdateChecker.checkAndPrompt(this, manual = false)
-        }
+        runCatching { TempSwaps.clearExpired(this) }
 
         setContent {
             AppTheme {
+                var consent by remember { mutableStateOf(LegalConsent.isAccepted(this@MainActivity)) }
+                if (!consent) {
+                    LegalConsentScreen(onAccepted = { consent = true })
+                    return@AppTheme
+                }
+                var update by remember { mutableStateOf<UpdateChecker.UpdateInfo?>(null) }
+                LaunchedEffect(Unit) {
+                    val ctx = this@MainActivity
+                    if (Prefs.isFirstRunDone(ctx) && Prefs.isAutoCheckUpdate(ctx) &&
+                        System.currentTimeMillis() - Prefs.getLastUpdateCheck(ctx) > UpdateChecker.AUTO_CHECK_INTERVAL_MS
+                    ) {
+                        val r = runCatching { UpdateChecker.check(ctx) }.getOrNull()
+                        if (r is UpdateChecker.CheckResult.UpdateAvailable && r.info.latest != Prefs.getSkippedVersion(ctx)) {
+                            update = r.info
+                        }
+                    }
+                }
                 SmartScheduleApp(
-                    openSettings = {
-                        startActivity(Intent(this@MainActivity, SettingsActivity::class.java))
+                    pendingUpdateDialog = {
+                        update?.let { info -> UpdateDialog(info = info, onDismiss = { update = null }) }
                     }
                 )
             }
@@ -57,20 +59,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // 从设置页回来时通知内容可能已经变了
-        NotificationHelper.updatePersistentNotification(this)
-    }
-
-    private fun requestNotificationPermissionIfNeeded() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
-        if (NotificationManagerCompat.from(this).areNotificationsEnabled()) return
-        // 只有真正用到通知的功能被打开时才打扰用户
-        val needsNotification = Prefs.isTomorrowReminderEnabled(this) ||
-            Prefs.isWeatherReminderEnabled(this) ||
-            Prefs.isPersistentEnabled(this) ||
-            Prefs.isKeepAlive(this)
-        if (needsNotification) {
-            requestNotifPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        // 回到前台时刷新常驻通知（课表可能刚改过）
+        runCatching {
+            if (Prefs.isPersistentEnabled(this) || Prefs.isKeepAlive(this)) NotificationHelper.updatePersistentNotification(this)
         }
     }
 }

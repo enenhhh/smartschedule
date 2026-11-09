@@ -1,6 +1,35 @@
-<?xml version="1.0" ?>
-<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#FFFFFFFF" android:pathData="M28,54a26,26 0,1 0,52 0a26,26 0,1 0,-52 0z"/>
-    <path android:fillColor="#00BCD4" android:pathData="M36,54a18,18 0,1 0,36 0a18,18 0,1 0,-36 0z"/>
-    <path android:fillColor="#FFFFFF" android:pathData="M50,44h16v5h-16zM50,54h20v5h-20zM50,64h14v5h-14z"/>
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 白色圆角课表卡片 + 薄荷色高亮格，所有内容位于 66dp 安全区内 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 卡片 -->
+    <path
+        android:fillColor="#FFF7F9FC"
+        android:pathData="M35,31h38a7,7 0 0 1 7,7v34a7,7 0 0 1 -7,7h-38a7,7 0 0 1 -7,-7v-34a7,7 0 0 1 7,-7z" />
+    <!-- 顶部标题条 -->
+    <path
+        android:fillColor="#FF1B2A4A"
+        android:pathData="M35,31h38a7,7 0 0 1 7,7v7h-52v-7a7,7 0 0 1 7,-7z" />
+    <!-- 活页环 -->
+    <path
+        android:fillColor="#FF9FE1CB"
+        android:pathData="M42.5,38m-2.2,0a2.2,2.2 0 1 1 4.4,0a2.2,2.2 0 1 1 -4.4,0" />
+    <path
+        android:fillColor="#FF9FE1CB"
+        android:pathData="M65.5,38m-2.2,0a2.2,2.2 0 1 1 4.4,0a2.2,2.2 0 1 1 -4.4,0" />
+    <!-- 第一行 -->
+    <path android:fillColor="#FFD6DEEE" android:pathData="M33,50h11a2,2 0 0 1 2,2v4a2,2 0 0 1 -2,2h-11a2,2 0 0 1 -2,-2v-4a2,2 0 0 1 2,-2z" />
+    <path android:fillColor="#FF2FB89A" android:pathData="M48.5,50h11a2,2 0 0 1 2,2v4a2,2 0 0 1 -2,2h-11a2,2 0 0 1 -2,-2v-4a2,2 0 0 1 2,-2z" />
+    <path android:fillColor="#FFD6DEEE" android:pathData="M64,50h11a2,2 0 0 1 2,2v4a2,2 0 0 1 -2,2h-11a2,2 0 0 1 -2,-2v-4a2,2 0 0 1 2,-2z" />
+    <!-- 第二行 -->
+    <path android:fillColor="#FFD6DEEE" android:pathData="M33,60h11a2,2 0 0 1 2,2v4a2,2 0 0 1 -2,2h-11a2,2 0 0 1 -2,-2v-4a2,2 0 0 1 2,-2z" />
+    <path android:fillColor="#FFD6DEEE" android:pathData="M48.5,60h11a2,2 0 0 1 2,2v4a2,2 0 0 1 -2,2h-11a2,2 0 0 1 -2,-2v-4a2,2 0 0 1 2,-2z" />
+    <path android:fillColor="#FF2FB89A" android:pathData="M64,60h11a2,2 0 0 1 2,2v4a2,2 0 0 1 -2,2h-11a2,2 0 0 1 -2,-2v-4a2,2 0 0 1 2,-2z" />
+    <!-- 第三行 -->
+    <path android:fillColor="#FFD6DEEE" android:pathData="M33,70h11a2,2 0 0 1 2,2v3a2,2 0 0 1 -2,2h-11a2,2 0 0 1 -2,-2v-3a2,2 0 0 1 2,-2z" />
+    <path android:fillColor="#FFD6DEEE" android:pathData="M48.5,70h11a2,2 0 0 1 2,2v3a2,2 0 0 1 -2,2h-11a2,2 0 0 1 -2,-2v-3a2,2 0 0 1 2,-2z" />
+    <path android:fillColor="#FFD6DEEE" android:pathData="M64,70h11a2,2 0 0 1 2,2v3a2,2 0 0 1 -2,2h-11a2,2 0 0 1 -2,-2v-3a2,2 0 0 1 2,-2z" />
 </vector>

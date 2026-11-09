@@ -112,7 +112,7 @@ object NotificationHelper {
         val manager = ScheduleManager(ctx)
         val content = "明日: ${getFormattedCourses(ctx, manager, true)}"
         return NotificationCompat.Builder(ctx, CHANNEL_REMINDERS)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("明日课表")
             .setContentText(content)
             .setStyle(NotificationCompat.BigTextStyle().bigText(content))
@@ -158,18 +158,19 @@ object NotificationHelper {
     }
 
     /** 已经在子线程里时调用这个版本 */
-    fun triggerWeatherNowBlocking(ctx: Context) {
+    fun triggerWeatherNowBlocking(ctx: Context): String {
         createChannels(ctx)
         val content = com.enenhhh.smartschedule.weather.WeatherFetcher.fetchTomorrowSummary(ctx)
         val builder = NotificationCompat.Builder(ctx, CHANNEL_WEATHER)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("明天天气")
             .setContentText(content)
             .setStyle(NotificationCompat.BigTextStyle().bigText(content))
             .setContentIntent(openAppIntent(ctx))
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-        NotificationManagerCompat.from(ctx).notify(NOTIF_ID_WEATHER, builder.build())
+        runCatching { NotificationManagerCompat.from(ctx).notify(NOTIF_ID_WEATHER, builder.build()) }
+        return content
     }
 
     fun scheduleDailyPersistentUpdate(ctx: Context) {
@@ -206,26 +207,45 @@ object NotificationHelper {
         }
     }
 
-    fun getFormattedCourses(ctx: Context, manager: com.enenhhh.smartschedule.data.ScheduleManager, isTomorrow: Boolean): String {
-        val cal = Calendar.getInstance()
-        if (isTomorrow) cal.add(Calendar.DAY_OF_YEAR, 1)
-        val dayIndex = when(cal.get(Calendar.DAY_OF_WEEK)) {
-            Calendar.MONDAY -> 1; Calendar.TUESDAY -> 2; Calendar.WEDNESDAY -> 3
-            Calendar.THURSDAY -> 4; Calendar.FRIDAY -> 5; Calendar.SATURDAY -> 6
-            else -> 7
+    /** 今天 / 明天的课程一行文本（简称）。周日晚上的「明天」会自动按下一周的单双周计算。 */
+    fun getFormattedCourses(ctx: Context, manager: ScheduleManager, isTomorrow: Boolean): String {
+        val date = java.time.LocalDate.now().let { if (isTomorrow) it.plusDays(1) else it }
+        val view = manager.dayView(date)
+        val courses = view.courses.filter { it.isNotBlank() }.map { manager.getShortName(it) }
+        val base = if (view.morningRead.isNotBlank()) {
+            "${manager.getShortName(view.morningRead)} | ${courses.joinToString(" ")}"
+        } else {
+            courses.joinToString(" ")
         }
-        val isOdd = com.enenhhh.smartschedule.util.DateUtils.getWeekNumberFrom(Prefs.getStartDate(ctx), cal.timeInMillis) % 2 == 1
-        val plan = manager.getActiveSchedule(isOdd, dayIndex)
-        
-        return plan?.let { p ->
-            val courses = p.courses.filter { it.isNotBlank() }.map { name -> manager.getShortName(name) }
-            val base = if (p.isMorningReadEnabled && p.morningRead.isNotBlank()) {
-                "${manager.getShortName(p.morningRead)} | ${courses.joinToString(" ")}"
+        return if (base.isBlank()) "无课" else base
+    }
+
+    /** 打开系统的「精确闹钟」授权页（Android 12+），提醒不准时可以引导用户开启 */
+    fun canScheduleExact(ctx: Context): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
+        val am = ctx.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        return am.canScheduleExactAlarms()
+    }
+
+    fun requestExactAlarmPermission(ctx: Context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+        try {
+            ctx.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                data = Uri.parse("package:${ctx.packageName}")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            })
+        } catch (_: Exception) {}
+    }
+
+    fun openNotificationSettings(ctx: Context) {
+        try {
+            val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, ctx.packageName)
             } else {
-                courses.joinToString(" ")
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${ctx.packageName}"))
             }
-            if (base.isBlank()) "无课" else base
-        } ?: "无课"
+            ctx.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (_: Exception) {}
     }
 
     fun buildPersistentNotification(ctx: Context): NotificationCompat.Builder {
@@ -233,16 +253,18 @@ object NotificationHelper {
         val hw = com.enenhhh.smartschedule.data.HomeworkRepository(ctx).getPending().filter { it.getDaysRemaining() <= 1 }
         val hwContent = if (hw.isNotEmpty()) "\n紧急作业: ${hw.joinToString { it.title }}" else ""
         
+        val today = manager.dayView(java.time.LocalDate.now())
         val content = buildString {
             append("今日: ${getFormattedCourses(ctx, manager, false)}")
             val tomorrow = getFormattedCourses(ctx, manager, true)
             if (tomorrow.isNotBlank()) append("\n明日: $tomorrow")
             if (hwContent.isNotBlank()) append(hwContent)
         }
+        val title = if (today.weekNumber >= 1) "智能课表 · 第 ${today.weekNumber} 周${if (today.isOdd) "单" else "双"}周" else "智能课表"
 
         return NotificationCompat.Builder(ctx, CHANNEL_PERSISTENT)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("智能课表")
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(title)
             .setContentText(content.lineSequence().firstOrNull().orEmpty())
             .setStyle(NotificationCompat.BigTextStyle().bigText(content))
             .setContentIntent(openAppIntent(ctx))
@@ -295,7 +317,7 @@ object NotificationHelper {
         val pi = PendingIntent.getActivity(ctx, 401, installIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val content = "${file.name} 下载完成, 点击安装（版本 ${version}）"
         val builder = NotificationCompat.Builder(ctx, CHANNEL_UPDATES)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("更新下载完成")
             .setContentText(content)
             .setStyle(NotificationCompat.BigTextStyle().bigText(content))

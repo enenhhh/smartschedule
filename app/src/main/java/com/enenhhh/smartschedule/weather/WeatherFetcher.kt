@@ -13,14 +13,14 @@ import java.util.Locale
 object WeatherFetcher {
 
     private fun httpGet(url: String): String {
-        val conn = URL(url).openConnection() as HttpURLConnection
+        val conn = URL(url).openConnection() as javax.net.ssl.HttpsURLConnection
         conn.connectTimeout = 8000
         conn.readTimeout = 8000
         conn.requestMethod = "GET"
         return try {
             val code = conn.responseCode
-            val stream = if (code in 200..299) conn.inputStream else conn.errorStream
-            stream.bufferedReader().use { it.readText() }
+            check(code in 200..299) { "天气服务 HTTP $code" }
+            conn.inputStream.bufferedReader().use { it.readText() }
         } finally {
             conn.disconnect()
         }
@@ -41,22 +41,28 @@ object WeatherFetcher {
                 val longitude = location.getDouble("longitude")
                 Pair(latitude, longitude)
             } else {
-                // 如果没找到，使用北京的坐标作为默认值
-                Log.w("WeatherFetcher", "未找到城市: $city，使用默认坐标")
-                Pair(39.9042, 116.4074)
+                // 找不到城市时不再悄悄回退到北京，让用户看到明确的提示
+                Log.w("WeatherFetcher", "未找到城市: $city")
+                null
             }
         } catch (e: Exception) {
             Log.e("WeatherFetcher", "获取城市坐标失败: ${e.message}", e)
-            // 失败时使用北京的坐标作为默认值
-            Pair(39.9042, 116.4074)
+            null
         }
     }
 
+    /** 设置页「测试」用：返回 null 表示城市可用，否则返回错误说明 */
+    fun checkCity(city: String): String? {
+        if (city.isBlank()) return "城市不能为空"
+        return if (getCoordinatesForCity(city.trim()) != null) null else "未找到城市「$city」，试试中文全称或拼音，例如 上海 / Shanghai"
+    }
+
     fun fetchTomorrowSummary(ctx: Context): String {
+        if (!com.enenhhh.smartschedule.legal.LegalConsent.isAccepted(ctx)) return "请先在应用中阅读用户须知"
         val city = com.enenhhh.smartschedule.util.Prefs.getWeatherCity(ctx)
 
-        val coordinates = getCoordinatesForCity(city)
-            ?: return "获取失败（城市不支持：$city）"
+        val coordinates = WeatherLocation.coordinates(ctx, city) ?: getCoordinatesForCity(city)
+            ?: return "未找到城市「$city」，请到 设置 › 提醒与通知 修改城市（或检查网络）"
 
         val (latitude, longitude) = coordinates
         
@@ -87,11 +93,11 @@ object WeatherFetcher {
             val weatherText = getWeatherText(weatherCode)
             val precipitationText = if (precipitationProb > 0) "，降水概率$precipitationProb%" else ""
             
-            "$weatherText，${tempMin}°/${tempMax}°$precipitationText"
+            "$city 明天：$weatherText，${tempMin}°/${tempMax}°$precipitationText"
             
         } catch (e: Exception) {
             Log.e("WeatherFetcher", "获取天气失败", e)
-            "获取天气失败"
+            "获取天气失败，请检查网络后重试"
         }
     }
 
