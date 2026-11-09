@@ -1,0 +1,3 @@
+# 放在数据目录（fxm/data/ 或 fxm-data/）里，Apache 下禁止直接访问分享文件
+Require all denied
+Deny from all

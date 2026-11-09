@@ -1,160 +1,187 @@
 package com.enenhhh.smartschedule.ui.app
 
-import androidx.compose.foundation.layout.Spacer
+import com.enenhhh.smartschedule.ui.legal.LegalDocumentScreen
+import com.enenhhh.smartschedule.ui.legal.PermissionsScreen
+import com.enenhhh.smartschedule.ui.motion.motionEnabled
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Assignment
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.TextFields
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.NavigationDrawerItemDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberDrawerState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.enenhhh.smartschedule.ui.FontSwitchDialog
-import com.enenhhh.smartschedule.ui.HomeScreen
-import com.enenhhh.smartschedule.ui.HomeworkScreen
-import com.enenhhh.smartschedule.ui.ScheduleScreen
-import com.enenhhh.smartschedule.ui.Text
-import com.enenhhh.smartschedule.ui.components.BrandTitle
-import kotlinx.coroutines.launch
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import com.enenhhh.smartschedule.data.ScheduleManager
+import com.enenhhh.smartschedule.data.TempSwaps
+import com.enenhhh.smartschedule.ui.glass.LocalHazeState
+import com.enenhhh.smartschedule.ui.components.LocalRoute
+import com.enenhhh.smartschedule.ui.components.LocalTopBarRegistry
+import com.enenhhh.smartschedule.ui.components.TopBarRegistry
+import com.enenhhh.smartschedule.ui.glass.MeshBackground
+import com.enenhhh.smartschedule.ui.homework.HomeworkScreen
+import com.enenhhh.smartschedule.ui.nav.Navigator
+import com.enenhhh.smartschedule.ui.nav.Route
+import com.enenhhh.smartschedule.ui.nav.rememberNavigator
+import com.enenhhh.smartschedule.ui.onboarding.OnboardingScreen
+import com.enenhhh.smartschedule.ui.settings.AboutScreen
+import com.enenhhh.smartschedule.ui.settings.AppearanceScreen
+import com.enenhhh.smartschedule.ui.settings.DataScreen
+import com.enenhhh.smartschedule.ui.settings.RemindersScreen
+import com.enenhhh.smartschedule.ui.settings.SemesterScreen
+import com.enenhhh.smartschedule.ui.settings.SettingsScreen
+import com.enenhhh.smartschedule.ui.settings.ShortNamesScreen
+import com.enenhhh.smartschedule.ui.timeplan.TimePlanEditorScreen
+import com.enenhhh.smartschedule.ui.timeplan.TimePlansScreen
+import com.enenhhh.smartschedule.ui.timetable.TimetableEditorScreen
+import com.enenhhh.smartschedule.ui.timetable.TimetableScreen
+import com.enenhhh.smartschedule.ui.timetable.TimetablesScreen
+import com.enenhhh.smartschedule.ui.today.TodayScreen
+import com.enenhhh.smartschedule.util.Prefs
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 
-@OptIn(ExperimentalMaterial3Api::class)
+val LocalNavigator = staticCompositionLocalOf<Navigator> { error("Navigator not provided") }
+val LocalScheduleManager = staticCompositionLocalOf<ScheduleManager> { error("ScheduleManager not provided") }
+val LocalSnackbar = staticCompositionLocalOf<SnackbarHostState> { error("Snackbar not provided") }
+
+/**
+ * 应用根布局。层次（自下而上）：
+ *   1. 流动背景 + 页面内容  —— 注册为 hazeSource，供上层玻璃取样
+ *   2. 底部玻璃导航胶囊（仅顶层页面）
+ *   3. Snackbar
+ */
 @Composable
-fun SmartScheduleApp(
-    openSettings: () -> Unit
-) {
-    var currentScreen by remember { mutableStateOf(AppScreen.Home) }
-    var showFontDialog by remember { mutableStateOf(false) }
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
+fun SmartScheduleApp(pendingUpdateDialog: @Composable () -> Unit = {}) {
+    val context = LocalContext.current
+    val manager = remember { ScheduleManager(context) }
+    val firstRun = remember { !Prefs.isFirstRunDone(context) }
+    val nav = rememberNavigator(if (firstRun) Route.Onboarding else Route.Today)
+    val haze = rememberHazeState()
+    val snackbar = remember { SnackbarHostState() }
+    val topBars = remember { TopBarRegistry() }
+    val motion = motionEnabled()
 
-    fun go(target: AppScreen) {
-        currentScreen = target
-        scope.launch { drawerState.close() }
+    LaunchedEffect(Unit) { TempSwaps.clearExpired(context) }
+    // 心跳：界面在前台期间每 15 秒对一次表；日期翻页时顺手清理过期调课
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(15_000)
+            if (com.enenhhh.smartschedule.util.AppClock.refresh()) TempSwaps.clearExpired(context)
+        }
     }
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            ModalDrawerSheet(modifier = Modifier.width(300.dp)) {
-                BrandTitle(
-                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 24.dp),
-                    titleSize = 24.sp,
-                    subtitleSize = 12.sp
-                )
+    BackHandler(enabled = nav.canGoBack) { nav.pop() }
 
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                Spacer(Modifier.height(8.dp))
-
-                DrawerItem("首页", Icons.Default.Home, currentScreen == AppScreen.Home) {
-                    go(AppScreen.Home)
-                }
-                DrawerItem("课表", Icons.Default.CalendarMonth, currentScreen == AppScreen.Schedule) {
-                    go(AppScreen.Schedule)
-                }
-                DrawerItem("作业", Icons.AutoMirrored.Filled.Assignment, currentScreen == AppScreen.Homework) {
-                    go(AppScreen.Homework)
-                }
-
-                Spacer(Modifier.height(8.dp))
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                Spacer(Modifier.height(8.dp))
-
-                DrawerItem("字体设置", Icons.Default.TextFields, false) {
-                    showFontDialog = true
-                    scope.launch { drawerState.close() }
-                }
-                DrawerItem("设置", Icons.Default.Settings, false) {
-                    openSettings()
-                    scope.launch { drawerState.close() }
-                }
-            }
-        }
+    CompositionLocalProvider(
+        LocalHazeState provides haze,
+        LocalTopBarRegistry provides topBars,
+        LocalNavigator provides nav,
+        LocalScheduleManager provides manager,
+        LocalSnackbar provides snackbar
     ) {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { BrandTitle(titleSize = 22.sp, subtitleSize = 11.sp) },
-                    navigationIcon = {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Default.Menu, contentDescription = "菜单")
+        Box(Modifier.fillMaxSize()) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .hazeSource(state = haze)
+            ) {
+                MeshBackground(Modifier.fillMaxSize())
+                AnimatedContent(
+                    targetState = nav.current,
+                    transitionSpec = {
+                        val forward = nav.lastMoveForward
+                        if (!motion) {
+                            fadeIn(tween(0)) togetherWith fadeOut(tween(0))
+                        } else if (initialState.isTopLevel && targetState.isTopLevel) {
+                            (fadeIn(tween(230)) + scaleIn(tween(330, easing = FastOutSlowInEasing), initialScale = 0.965f)) togetherWith
+                                (fadeOut(tween(100)) + scaleOut(tween(190), targetScale = 1.015f))
+                        } else if (forward) {
+                            (slideInHorizontally(tween(320)) { it / 5 } + fadeIn(tween(260))) togetherWith
+                                (slideOutHorizontally(tween(320)) { -it / 8 } + fadeOut(tween(200)))
+                        } else {
+                            (slideInHorizontally(tween(320)) { -it / 8 } + fadeIn(tween(260))) togetherWith
+                                (slideOutHorizontally(tween(320)) { it / 5 } + fadeOut(tween(200)))
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent,
-                        scrolledContainerColor = Color.Transparent
-                    )
-                )
-            }
-        ) { innerPadding ->
-            when (currentScreen) {
-                AppScreen.Home -> HomeScreen(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    onOpenSchedule = { currentScreen = AppScreen.Schedule },
-                    onOpenHomework = { currentScreen = AppScreen.Homework }
-                )
-
-                AppScreen.Schedule -> ScheduleScreen(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                )
-
-                AppScreen.Homework -> HomeworkScreen(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                )
+                    label = "routes"
+                ) { route ->
+                    CompositionLocalProvider(LocalRoute provides route) {
+                        RouteContent(route)
+                    }
+                }
             }
 
-            if (showFontDialog) {
-                FontSwitchDialog(onDismiss = { showFontDialog = false })
+            // 子页面顶栏：在 hazeSource 之外渲染（Haze 不允许效果节点位于其取样源之内）
+            AnimatedContent(
+                targetState = nav.current,
+                transitionSpec = { fadeIn(tween(if (motion) 220 else 0)) togetherWith fadeOut(tween(if (motion) 160 else 0)) },
+                modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth(),
+                label = "topbar"
+            ) { route ->
+                Box(Modifier.fillMaxWidth()) { topBars.Render(route) }
             }
+
+            AnimatedVisibility(
+                visible = nav.current.isTopLevel,
+                enter = slideInVertically(tween(if (motion) 280 else 0)) { it } + fadeIn(),
+                exit = slideOutVertically(tween(if (motion) 220 else 0)) { it } + fadeOut(),
+                modifier = Modifier.align(Alignment.BottomCenter)
+            ) {
+                GlassBottomNav(current = nav.current, onSelect = { nav.switchTab(it) })
+            }
+
+            SnackbarHost(
+                hostState = snackbar,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 100.dp)
+            )
+
+            pendingUpdateDialog()
         }
     }
 }
 
 @Composable
-private fun DrawerItem(
-    label: String,
-    icon: ImageVector,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    NavigationDrawerItem(
-        label = { Text(label, style = MaterialTheme.typography.labelLarge) },
-        icon = { Icon(icon, contentDescription = null) },
-        selected = selected,
-        onClick = onClick,
-        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-    )
+private fun RouteContent(route: Route) {
+    when (route) {
+        Route.Today -> TodayScreen()
+        Route.Timetable -> TimetableScreen()
+        Route.Homework -> HomeworkScreen()
+        Route.Settings -> SettingsScreen()
+        Route.Timetables -> TimetablesScreen()
+        is Route.TimetableEditor -> TimetableEditorScreen(route.id)
+        Route.TimePlans -> TimePlansScreen()
+        is Route.TimePlanEditor -> TimePlanEditorScreen(route.name)
+        Route.ShortNames -> ShortNamesScreen()
+        Route.Semester -> SemesterScreen()
+        Route.Appearance -> AppearanceScreen()
+        Route.Reminders -> RemindersScreen()
+        Route.DataManagement -> DataScreen()
+        is Route.LegalDocument -> LegalDocumentScreen(route.id)
+        Route.Permissions -> PermissionsScreen()
+        Route.About -> AboutScreen()
+        Route.Onboarding -> OnboardingScreen()
+    }
 }

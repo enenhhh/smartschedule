@@ -1,5 +1,7 @@
 buildscript {
     repositories {
+        google()
+        mavenCentral()
         maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://maven.aliyun.com/repository/central' }
         maven { url 'https://maven.aliyun.com/repository/public' }
@@ -7,13 +9,15 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.9.2'
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.10'
+        classpath 'com.android.tools.build:gradle:9.1.0'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.21'
     }
 }
 
 allprojects {
     repositories {
+        google()
+        mavenCentral()
         maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://maven.aliyun.com/repository/central' }
         maven { url 'https://maven.aliyun.com/repository/public' }

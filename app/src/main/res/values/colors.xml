@@ -1,24 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  界面配色已经全部迁移到 Compose（见 ui/theme/Color.kt）。
-  这里只保留三类还必须由资源系统提供的颜色，取值和 Compose 那边保持一致，
-  避免启动瞬间闪一下不同的底色：
-    1. Compose 首帧之前的窗口背景；
-    2. 平台对话框（日期 / 时间选择器）用到的主题色；
-    3. 自适应图标 ic_launcher_background 的底色。
+  界面配色全部由 Compose（ui/theme/AppTheme.kt，MaterialKolor 动态生成）负责。
+  这里只保留 Compose 首帧之前的窗口背景色，避免启动瞬间闪白 / 闪黑。
 -->
 <resources>
-    <!-- 对应 Compose 的 LightBackground / 中性色阶 -->
-    <color name="app_window_background">#FBFBFD</color>
-    <color name="app_surface">#FBFBFD</color>
-    <color name="app_on_surface">#1A1B1E</color>
-    <color name="app_surface_variant">#E1E2E8</color>
-    <color name="app_on_surface_variant">#45474D</color>
-    <color name="app_outline">#757780</color>
-
-    <!-- 主题色（靛蓝，与 IndigoLight 一致） -->
-    <color name="fluent_primary">#005FB8</color>
-    <color name="app_on_primary">#FFFFFF</color>
-    <color name="app_primary_container">#D3E3FA</color>
-    <color name="app_on_primary_container">#001C3A</color>
+    <color name="app_window_background">#F4F6FB</color>
 </resources>

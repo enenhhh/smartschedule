@@ -1,60 +1,79 @@
 package com.enenhhh.smartschedule.data
 
 import android.content.Context
-import com.enenhhh.smartschedule.models.SchedulePlan
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
+import com.enenhhh.smartschedule.models.DayView
+import com.enenhhh.smartschedule.models.LegacySchedulePlan
 import com.enenhhh.smartschedule.models.TimePlan
-import com.enenhhh.smartschedule.models.TimePeriod
-import org.json.JSONObject
+import com.enenhhh.smartschedule.models.Timetable
+import com.enenhhh.smartschedule.util.DateUtils
+import com.enenhhh.smartschedule.util.Prefs
 import java.io.File
+import java.time.LocalDate
 
-class ScheduleManager(private val context: Context) {
-    // 改回外部存储路径，方便用户调试
-    private val plansDir = File(context.getExternalFilesDir(null), "plans")
+/**
+ * 课表 / 时间方案 / 简写的存取中心。
+ *
+ * 文件布局（外部私有目录，用户可以用文件管理器看到，方便手动备份）：
+ *   plans/time/<方案名>.json        时间方案
+ *   plans/timetable/<id>.json       5.0 课表
+ *   plans/course/<方案名>.json      4.0 及以前的课程方案（迁移后保留不动，只读）
+ *
+ * 所有读操作走进程级缓存；任何写操作都会让缓存失效并把 [version] +1，
+ * Compose 界面用 `remember(ScheduleManager.version)` 就能自动刷新。
+ */
+class ScheduleManager(context: Context) {
+    private val appContext = context.applicationContext
+    private val baseDir = appContext.getExternalFilesDir(null) ?: appContext.filesDir
+    private val plansDir = File(baseDir, "plans")
     private val timeDir = File(plansDir, "time")
-    private val courseDir = File(plansDir, "course")
+    private val legacyCourseDir = File(plansDir, "course")
+    private val timetableDir = File(plansDir, "timetable")
 
     init {
-        if (!timeDir.exists()) timeDir.mkdirs()
-        if (!courseDir.exists()) courseDir.mkdirs()
+        timeDir.mkdirs()
+        timetableDir.mkdirs()
+        migrateIfNeeded()
     }
 
-    /**
-     * 方案文件和课程简写会被首页每秒读一次、课表页每个格子读一次，
-     * 每次都走磁盘 + JSON 解析开销很大，这里做进程级缓存，写入时失效。
-     */
     companion object {
+        /** 任意数据变动 +1；界面以它为 key 重新读取 */
+        var version by mutableIntStateOf(0)
+            private set
+
         @Volatile private var cachedTimePlans: List<TimePlan>? = null
-        @Volatile private var cachedSchedulePlans: List<SchedulePlan>? = null
+        @Volatile private var cachedTimetables: List<Timetable>? = null
         @Volatile private var cachedShortNames: Map<String, String>? = null
 
-        /** 磁盘上的方案 / 简写被外部改动（导入、恢复）后必须调用 */
         fun invalidateCache() {
             cachedTimePlans = null
-            cachedSchedulePlans = null
+            cachedTimetables = null
             cachedShortNames = null
+            version++
         }
+
+        /** 文件名只保留安全字符，避免 "/"、".." 之类把路径带跑 */
+        fun sanitizeFileName(name: String): String {
+            val cleaned = name.trim()
+                .replace(Regex("[\\\\/:*?\"<>|\\u0000-\\u001f]"), "_")
+                .replace(Regex("\\.{2,}"), "_")
+                .trim('.', ' ')
+            val limited = if (cleaned.length > 60) cleaned.substring(0, 60) else cleaned
+            return limited.ifBlank { "unnamed" }
+        }
+
+        fun isValidPlanName(name: String): Boolean =
+            name.isNotBlank() && name.length <= 30 && !name.contains(Regex("[\\\\/:*?\"<>|\\u0000-\\u001f]"))
     }
 
     fun invalidateCache() = Companion.invalidateCache()
 
-    // 获取当前日期对应的课程方案
-    fun getActiveSchedule(isOdd: Boolean, dayIndex: Int): SchedulePlan? {
-        val dayKey = "${if (isOdd) "odd" else "even"}_$dayIndex"
-        return getSchedulePlans().find { it.bindingDays.contains(dayKey) }
-    }
-
-    // 3.0 的迁移逻辑已移除：它只搬课程名，节次时间会被替换成一张写死的默认时间表，
-    // 迁完仍需手工重调，收益低于直接重新录入。
-
-    // --- 时间方案管理 ---
-    fun saveTimePlan(plan: TimePlan) {
-        File(timeDir, "${plan.name}.json").writeText(plan.toJson())
-        invalidateCache()
-    }
+    // ------------------------------------------------------------------ 时间方案
 
     fun getTimePlans(): List<TimePlan> {
         cachedTimePlans?.let { return it }
-        // 单个文件损坏不应该让整页崩溃，跳过读不出来的
         val loaded = timeDir.listFiles()
             ?.filter { it.extension == "json" }
             ?.mapNotNull { f -> runCatching { TimePlan.fromJson(f.readText()) }.getOrNull() }
@@ -64,73 +83,157 @@ class ScheduleManager(private val context: Context) {
         return loaded
     }
 
-    fun deleteTimePlan(name: String) {
-        File(timeDir, "$name.json").delete()
-        invalidateCache()
-    }
+    fun getTimePlan(name: String?): TimePlan? =
+        if (name.isNullOrBlank()) null else getTimePlans().firstOrNull { it.name == name }
 
-    fun calculateAutoFill(startTime: String, lessonMinutes: Int, breakMinutes: Int, count: Int): List<TimePeriod> {
-        val result = mutableListOf<TimePeriod>()
-        var currentStart = timeToMinutes(startTime)
-        for (i in 0 until count) {
-            val end = currentStart + lessonMinutes
-            result.add(TimePeriod(minutesToTime(currentStart), minutesToTime(end)))
-            currentStart = end + breakMinutes
+    /** 保存；[oldName] 不为空且与新名字不同视为重命名，会一并更新引用它的课表 */
+    fun saveTimePlan(plan: TimePlan, oldName: String? = null) {
+        if (!oldName.isNullOrBlank() && oldName != plan.name) {
+            timePlanFile(oldName).delete()
+            getTimetables().filter { it.timePlanName == oldName }.forEach { tt ->
+                writeTimetable(tt.copy(timePlanName = plan.name))
+            }
         }
-        return result
-    }
-// --- 课程方案管理 ---
-    fun saveSchedulePlan(plan: SchedulePlan) {
-        File(courseDir, "${plan.name}.json").writeText(plan.toJson())
+        timePlanFile(plan.name).writeText(plan.toJson())
         invalidateCache()
     }
 
-    fun getSchedulePlans(): List<SchedulePlan> {
-        cachedSchedulePlans?.let { return it }
-        val loaded = courseDir.listFiles()
+    fun deleteTimePlan(name: String) {
+        timePlanFile(name).delete()
+        // 兼容旧版未净化的文件名
+        timeDir.listFiles()?.forEach { f ->
+            if (f.extension == "json" && runCatching { TimePlan.fromJson(f.readText()).name }.getOrNull() == name) f.delete()
+        }
+        invalidateCache()
+    }
+
+    fun duplicateTimePlan(sourceName: String, newName: String) {
+        val src = getTimePlan(sourceName) ?: return
+        saveTimePlan(src.copy(name = newName))
+    }
+
+    private fun timePlanFile(name: String) = File(timeDir, sanitizeFileName(name) + ".json")
+
+    // ------------------------------------------------------------------ 课表
+
+    fun getTimetables(): List<Timetable> {
+        cachedTimetables?.let { return it }
+        val loaded = timetableDir.listFiles()
             ?.filter { it.extension == "json" }
-            ?.mapNotNull { f -> runCatching { SchedulePlan.fromJson(f.readText()) }.getOrNull() }
-            ?.sortedBy { it.name }
+            ?.mapNotNull { f -> runCatching { Timetable.fromJson(f.readText()) }.getOrNull() }
+            ?.sortedBy { it.createdAt }
             ?: emptyList()
-        cachedSchedulePlans = loaded
+        cachedTimetables = loaded
         return loaded
     }
 
-    fun deleteSchedulePlan(name: String) {
-        File(courseDir, "$name.json").delete()
+    fun getTimetable(id: String?): Timetable? =
+        if (id.isNullOrBlank()) null else getTimetables().firstOrNull { it.id == id }
+
+    fun saveTimetable(tt: Timetable) {
+        writeTimetable(tt)
+        if (Prefs.getActiveTimetableId(appContext) == null) Prefs.setActiveTimetableId(appContext, tt.id)
         invalidateCache()
     }
 
-    fun copySchedulePlan(sourceName: String, newName: String) {
-        val sourceFile = File(courseDir, "$sourceName.json")
-        if (sourceFile.exists()) {
-            val plan = SchedulePlan.fromJson(sourceFile.readText())
-            plan.name = newName
-            saveSchedulePlan(plan)
+    private fun writeTimetable(tt: Timetable) {
+        File(timetableDir, sanitizeFileName(tt.id) + ".json").writeText(tt.toJson())
+    }
+
+    fun deleteTimetable(id: String) {
+        File(timetableDir, sanitizeFileName(id) + ".json").delete()
+        if (Prefs.getActiveTimetableId(appContext) == id) {
+            Prefs.setActiveTimetableId(appContext, null)
+        }
+        invalidateCache()
+        // 删掉使用中的那张后自动切到剩余的第一张
+        if (Prefs.getActiveTimetableId(appContext) == null) {
+            getTimetables().firstOrNull()?.let { Prefs.setActiveTimetableId(appContext, it.id) }
         }
     }
 
-    fun copyTimePlan(sourceName: String, newName: String) {
-        val sourceFile = File(timeDir, "$sourceName.json")
-        if (sourceFile.exists()) {
-            val plan = TimePlan.fromJson(sourceFile.readText())
-            plan.name = newName
-            saveTimePlan(plan)
+    fun duplicateTimetable(id: String, newName: String): Timetable? {
+        val src = getTimetable(id) ?: return null
+        val copy = src.copy(id = Timetable.newId(), name = newName, createdAt = System.currentTimeMillis())
+        saveTimetable(copy)
+        return copy
+    }
+
+    fun getActiveTimetable(): Timetable? {
+        val all = getTimetables()
+        if (all.isEmpty()) return null
+        val id = Prefs.getActiveTimetableId(appContext)
+        return all.firstOrNull { it.id == id } ?: all.first().also { Prefs.setActiveTimetableId(appContext, it.id) }
+    }
+
+    fun setActiveTimetable(id: String) {
+        Prefs.setActiveTimetableId(appContext, id)
+        invalidateCache()
+    }
+
+    /** 课表绑定的时间方案；绑定失效时退回第一个可用的方案 */
+    fun resolveTimePlan(tt: Timetable?): TimePlan? {
+        val plans = getTimePlans()
+        if (plans.isEmpty()) return null
+        return plans.firstOrNull { it.name == tt?.timePlanName } ?: plans.first()
+    }
+
+    /** 新建一张课表并设为使用中（首次配置 / 空状态按钮用） */
+    fun createTimetable(name: String, timePlanName: String?): Timetable {
+        val tp = timePlanName ?: getTimePlans().firstOrNull()?.name ?: run {
+            val def = TimePlan.defaultPlan()
+            saveTimePlan(def)
+            def.name
         }
-    }
-    private fun timeToMinutes(time: String): Int {
-        val p = time.split(":")
-        if (p.size < 2) return 0
-        return p[0].toInt() * 60 + p[1].toInt()
-    }
-
-    private fun minutesToTime(total: Int): String {
-        val h = (total / 60) % 24
-        val m = total % 60
-        return "%02d:%02d".format(h, m)
+        val tt = Timetable(name = name.ifBlank { "我的课表" }, timePlanName = tp)
+        saveTimetable(tt)
+        setActiveTimetable(tt.id)
+        return tt
     }
 
-    // --- 课程名简写处理 ---
+    // ------------------------------------------------------------------ 某一天的课
+
+    fun dayView(date: LocalDate, timetable: Timetable? = getActiveTimetable()): DayView {
+        val start = Prefs.getStartDate(appContext)
+        val week = DateUtils.weekNumber(start, date)
+        val isOdd = DateUtils.isOddWeek(week)
+        val dayIndex = DateUtils.dayIndex(date)
+        val plan = resolveTimePlan(timetable)
+        val periodCount = plan?.periods?.size ?: 0
+        val day = timetable?.day(dayIndex)
+        val base = day?.coursesFor(isOdd) ?: emptyList()
+        val courses = MutableList(periodCount) { base.getOrNull(it).orEmpty() }
+        val swaps = TempSwaps.forDate(appContext, date)
+        val swapped = HashSet<Int>()
+        swaps.forEach { s ->
+            if (s.period in courses.indices) {
+                courses[s.period] = s.course
+                swapped.add(s.period)
+            }
+        }
+        return DayView(
+            date = date,
+            dayIndex = dayIndex,
+            weekNumber = week,
+            isOdd = isOdd,
+            timePlan = plan,
+            morningRead = day?.morningReadFor(isOdd).orEmpty(),
+            courses = courses,
+            swappedPeriods = swapped
+        )
+    }
+
+    /** 当前课表 + 所有课表里出现过的课程名，用于编辑时的联想 */
+    fun knownCourseNames(): List<String> {
+        val names = LinkedHashSet<String>()
+        getActiveTimetable()?.allCourseNames()?.let { names.addAll(it) }
+        getTimetables().forEach { names.addAll(it.allCourseNames()) }
+        names.addAll(getCustomShortNames().keys)
+        return names.filter { it.isNotBlank() }
+    }
+
+    // ------------------------------------------------------------------ 课程简写
+
     fun getShortName(fullName: String): String {
         if (fullName.isBlank()) return ""
         val custom = getCustomShortNames()[fullName]
@@ -138,21 +241,69 @@ class ScheduleManager(private val context: Context) {
         return if (fullName.length > 2) fullName.substring(0, 2) else fullName
     }
 
-    private fun getCustomShortNames(): Map<String, String> {
+    fun getCustomShortNames(): Map<String, String> {
         cachedShortNames?.let { return it }
-        val jsonStr = context.getSharedPreferences("prefs", Context.MODE_PRIVATE)
-            .getString("custom_short_names", "{}") ?: "{}"
-        val map = mutableMapOf<String, String>()
-        try {
-            val obj = JSONObject(jsonStr)
-            val keys = obj.keys()
-            while (keys.hasNext()) {
-                val k = keys.next()
-                map[k] = obj.getString(k)
-            }
-        } catch (_: Exception) {
-        }
+        val map = Prefs.getCustomShortNames(appContext)
         cachedShortNames = map
         return map
+    }
+
+    fun setCustomShortNames(map: Map<String, String>) {
+        Prefs.setCustomShortNames(appContext, map)
+        invalidateCache()
+    }
+
+    // ------------------------------------------------------------------ 旧数据迁移
+
+    fun readLegacyPlans(): List<LegacySchedulePlan> =
+        legacyCourseDir.listFiles()
+            ?.filter { it.extension == "json" }
+            ?.mapNotNull { f -> runCatching { LegacySchedulePlan.fromJson(f.readText()) }.getOrNull() }
+            ?.sortedBy { it.name }
+            ?: emptyList()
+
+    /**
+     * 4.0 → 5.0：把「一天一份」的课程方案合成一张整周课表。只在还没有任何 5.0
+     * 课表时执行一次；旧文件原样保留，万一有问题用户还能回退旧版本。
+     */
+    private fun migrateIfNeeded() {
+        if (Prefs.isMigratedV5(appContext)) return
+        val existing = timetableDir.listFiles()?.any { it.extension == "json" } == true
+        if (!existing) {
+            val legacy = readLegacyPlans()
+            if (legacy.isNotEmpty()) {
+                val tt = Timetable.fromLegacy(legacy, "我的课表")
+                writeTimetable(tt)
+                Prefs.setActiveTimetableId(appContext, tt.id)
+            }
+        }
+        Prefs.setMigratedV5(appContext, true)
+        Companion.invalidateCache()
+    }
+
+    // ------------------------------------------------------------------ 导入（分享码 / 备份）
+
+    /**
+     * 合并导入：同名时间方案覆盖；课表按 id 覆盖、否则追加。
+     * [replace] 为 true 时先清空现有的时间方案和课表。
+     */
+    fun importData(timePlans: List<TimePlan>, timetables: List<Timetable>, shortNames: Map<String, String>, replace: Boolean) {
+        if (replace) {
+            timeDir.listFiles()?.forEach { it.delete() }
+            timetableDir.listFiles()?.forEach { it.delete() }
+            Prefs.setActiveTimetableId(appContext, null)
+        }
+        timePlans.forEach { timePlanFile(it.name).writeText(it.toJson()) }
+        timetables.forEach { writeTimetable(it) }
+        if (shortNames.isNotEmpty()) {
+            val merged = LinkedHashMap(if (replace) emptyMap() else getCustomShortNames())
+            merged.putAll(shortNames)
+            Prefs.setCustomShortNames(appContext, merged)
+        }
+        invalidateCache()
+        if (Prefs.getActiveTimetableId(appContext) == null || getTimetable(Prefs.getActiveTimetableId(appContext)) == null) {
+            (timetables.firstOrNull() ?: getTimetables().firstOrNull())?.let { Prefs.setActiveTimetableId(appContext, it.id) }
+        }
+        invalidateCache()
     }
 }

@@ -1,20 +1,21 @@
-<?xml version="1.0" ?>
-<!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
--->
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ 云备份 / 设备迁移规则 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <include domain="sharedpref" path="." />
+        <exclude domain="sharedpref" path="legal_consent.xml" />
+        <exclude domain="sharedpref" path="weather_location.xml" />
+        <include domain="file" path="." />
+        <include domain="external" path="." />
+        <exclude domain="external" path="downloads" />
+        <exclude domain="file" path="crash.log" />
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <include domain="sharedpref" path="." />
+        <exclude domain="sharedpref" path="legal_consent.xml" />
+        <exclude domain="sharedpref" path="weather_location.xml" />
+        <include domain="file" path="." />
+        <include domain="external" path="." />
+        <exclude domain="external" path="downloads" />
     </device-transfer>
-    -->
 </data-extraction-rules>
