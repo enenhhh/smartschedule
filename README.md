@@ -200,6 +200,12 @@ server/   分享码服务（PHP）      site/   官网      legal/   条款文�
 
 ---
 
+## 许可证
+
+[MIT](LICENSE) © 2026 恩恩hhh
+
+---
+
 ## 反馈
 
 - GitHub Issues
