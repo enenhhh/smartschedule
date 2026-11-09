@@ -630,7 +630,7 @@ footer{padding:40px 0 56px;color:var(--muted);font-size:14px}
       $('#dlBtn').href=apk.browser_download_url;
       $('#dlText').textContent='下载 '+rel.tag_name+' APK';
       $('#dlVer').textContent=String(rel.tag_name).replace(/^v/,'');
-      $('#dlSize').textContent=(apk.size/1048576).toFixed(2)+' MB';
+      $('#dlSize').textContent=(apk.size/1e6).toFixed(2)+' MB';
       if(rel.published_at){ $('#dlDate').textContent=new Date(rel.published_at).toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'}); $('#dlDateWrap').hidden=false; }
       if(apk.digest && /^sha256:/.test(apk.digest)){ var h=$('#dlHash'); h.textContent='SHA-256  '+apk.digest.slice(7); h.hidden=false; }
     }).catch(function(){});
