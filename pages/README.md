@@ -27,12 +27,12 @@ python3 tools/subset_fonts.py GoogleSansFlex.ttf NotoSansSC.ttf   # 两个源字
 
 ## 部署
 
-Pages 的发布源是 **gh-pages 分支根目录**。把本目录的内容复制过去并推送（`.nojekyll` 要保留，`tools/` 不用复制）：
+Pages 的发布源是 **gh-pages 分支根目录**。用本目录的内容整体替换过去并推送（`.nojekyll` 要保留，`tools/` 和本 README 不用发布）：
 
 ```bash
 git worktree add ../ghp gh-pages
-rsync -a --delete --exclude .git --exclude tools --exclude README.md pages/ ../ghp/
-cd ../ghp && git add -A && git commit -m "site: 更新" && git push origin gh-pages
+cd ../ghp && git rm -rq . && cp -r ../smartschedule/pages/. ./ && rm -rf tools README.md
+git add -A && git commit -m "site: 更新" && git push origin gh-pages
 ```
 
 下载区块在浏览器里请求 GitHub 最新 Release，自动显示版本、大小、发布日期和 SHA-256；请求失败时使用页面里写死的 5.2 下载链接。发新版后不用改这个页面，但静态默认链接（`#dlBtn`）建议顺手更新。
