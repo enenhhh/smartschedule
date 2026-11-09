@@ -48,7 +48,7 @@ import com.enenhhh.smartschedule.util.DateUtils
 import com.enenhhh.smartschedule.util.Prefs
 import java.time.LocalDate
 
-const val APP_VERSION_NAME = "5.1"
+const val APP_VERSION_NAME = "5.2"
 
 @Composable
 fun SettingsScreen() {
