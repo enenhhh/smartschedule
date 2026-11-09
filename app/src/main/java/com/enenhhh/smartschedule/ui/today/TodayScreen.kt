@@ -65,6 +65,7 @@ import com.enenhhh.smartschedule.ui.components.onCourseColor
 import com.enenhhh.smartschedule.ui.glass.glassAccentCard
 import com.enenhhh.smartschedule.ui.glass.glassCard
 import com.enenhhh.smartschedule.ui.nav.Route
+import com.enenhhh.smartschedule.util.AppClock
 import com.enenhhh.smartschedule.util.DateUtils
 import kotlinx.coroutines.delay
 import java.time.LocalDate
@@ -129,17 +130,9 @@ fun TodayScreen() {
     val nav = LocalNavigator.current
     val version = ScheduleManager.version
 
-    var now by remember { mutableStateOf(LocalTime.now()) }
-    var today by remember { mutableStateOf(LocalDate.now()) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(20_000)
-            now = LocalTime.now()
-            val d = LocalDate.now()
-            if (d != today) today = d
-        }
-    }
-    val nowMin = now.hour * 60 + now.minute
+    // 「今天」和「现在」来自全局时钟（回前台 / 日期广播 / 心跳都会刷新），不再在页面里冻结
+    val today = AppClock.today
+    val nowMin = AppClock.nowMinutes
 
     val timetable = remember(version) { manager.getActiveTimetable() }
     val todayView = remember(version, today) { manager.dayView(today) }
@@ -295,7 +288,7 @@ private fun HeroCard(status: Status, view: DayView) {
     val cs = MaterialTheme.colorScheme
     val total = view.courses.count { it.isNotBlank() }
     val done = view.timePlan?.periods?.withIndex()?.count { (i, p) ->
-        view.courses.getOrNull(i)?.isNotBlank() == true && DateUtils.nowMinutes() >= p.endMinutes
+        view.courses.getOrNull(i)?.isNotBlank() == true && AppClock.nowMinutes >= p.endMinutes
     } ?: 0
     Column(
         Modifier

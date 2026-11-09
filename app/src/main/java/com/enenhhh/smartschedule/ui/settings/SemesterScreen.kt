@@ -39,6 +39,7 @@ import com.enenhhh.smartschedule.ui.components.SettingRow
 import com.enenhhh.smartschedule.ui.components.SettingSwitchRow
 import com.enenhhh.smartschedule.ui.components.SubPage
 import com.enenhhh.smartschedule.ui.glass.glassAccentCard
+import com.enenhhh.smartschedule.util.AppClock
 import com.enenhhh.smartschedule.util.DateUtils
 import com.enenhhh.smartschedule.util.Prefs
 import java.time.LocalDate
@@ -54,7 +55,7 @@ fun SemesterScreen() {
     var startDate by remember { mutableStateOf(Prefs.getStartDate(context)) }
     var showWeekend by remember { mutableStateOf(Prefs.isShowWeekend(context)) }
     var picker by remember { mutableStateOf(false) }
-    val today = LocalDate.now()
+    val today = AppClock.today
     val week = DateUtils.weekNumber(startDate, today)
     val odd = DateUtils.isOddWeek(week)
 

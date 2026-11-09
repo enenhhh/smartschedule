@@ -80,6 +80,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.enenhhh.smartschedule.ui.glass.LocalGlass
 import com.enenhhh.smartschedule.ui.glass.glassBar
+import com.enenhhh.smartschedule.ui.glass.glassPanel
 import com.enenhhh.smartschedule.ui.glass.glassCard
 import java.time.Instant
 import java.time.LocalDate
@@ -398,7 +399,7 @@ fun GlassDialog(
             modifier = modifier
                 .padding(horizontal = 28.dp, vertical = 24.dp)
                 .fillMaxWidth()
-                .glassBar(shape = shape, tint = MaterialTheme.colorScheme.surfaceContainerHigh)
+                .glassPanel(shape = shape, tint = MaterialTheme.colorScheme.surfaceContainerHigh)
                 .padding(horizontal = 24.dp, vertical = 20.dp)
         ) {
             if (title != null) {
@@ -501,7 +502,7 @@ fun GlassSheet(
         Column(
             modifier = modifier
                 .fillMaxWidth()
-                .glassBar(shape = shape, tint = MaterialTheme.colorScheme.surfaceContainerHigh)
+                .glassPanel(shape = shape, tint = MaterialTheme.colorScheme.surfaceContainerHigh)
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 12.dp)
                 .windowInsetsPadding(WindowInsets.navigationBars)

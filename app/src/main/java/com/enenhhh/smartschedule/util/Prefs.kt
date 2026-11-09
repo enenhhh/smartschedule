@@ -40,7 +40,7 @@ object Prefs {
     private const val KEY_MIGRATED_V5 = "migrated_v5"
     private const val KEY_CUSTOM_SEED = "custom_seed_color"
     private const val KEY_SHOW_WEEKEND = "show_weekend"
-    private const val KEY_UPDATE_SOURCE = "update_source"
+    private const val KEY_UPDATE_SOURCE = "update_source_v2" // v2：下标 0 改为 GitHub，旧存档（0=博客源）作废，所有人回到默认的 GitHub
     private const val KEY_LAST_UPDATE_CHECK = "last_update_check"
     private const val KEY_SKIPPED_VERSION = "skipped_version"
 

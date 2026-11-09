@@ -30,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,6 +53,7 @@ import com.enenhhh.smartschedule.ui.components.SettingRow
 import com.enenhhh.smartschedule.ui.glass.glassCard
 import com.enenhhh.smartschedule.ui.nav.Route
 import com.enenhhh.smartschedule.ui.today.topLevelContentPadding
+import com.enenhhh.smartschedule.util.AppClock
 import com.enenhhh.smartschedule.util.DateUtils
 import com.enenhhh.smartschedule.util.Prefs
 import java.time.LocalDate
@@ -63,19 +65,21 @@ fun TimetableScreen() {
     val nav = LocalNavigator.current
     val version = ScheduleManager.version
 
-    val today = remember { LocalDate.now() }
+    val today = AppClock.today
     val timetable = remember(version) { manager.getActiveTimetable() }
     val timePlan = remember(version) { manager.resolveTimePlan(timetable) }
     val all = remember(version) { manager.getTimetables() }
     val todayView = remember(version) { manager.dayView(today) }
 
     var showOdd by rememberSaveable { mutableStateOf(todayView.isOdd) }
+    // 跨周（单双周翻转）时让预览跟着走；用户手动切换后在同一周内保持不变
+    LaunchedEffect(todayView.isOdd) { showOdd = todayView.isOdd }
     var showWeekend by rememberSaveable { mutableStateOf(Prefs.isShowWeekend(context)) }
     var picked by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     var showSwitcher by remember { mutableStateOf(false) }
 
     val motion = motionEnabled()
-    val nowMin = DateUtils.nowMinutes()
+    val nowMin = AppClock.nowMinutes
     val currentPeriod = timePlan?.periods?.indexOfFirst { nowMin in it.startMinutes until it.endMinutes }?.takeIf { it >= 0 }
     val days = remember(showWeekend, timetable) {
         if (showWeekend || timetable?.weekendUsed() == true) (1..7).toList() else (1..5).toList()

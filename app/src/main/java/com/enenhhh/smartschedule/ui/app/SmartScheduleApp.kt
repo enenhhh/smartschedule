@@ -83,6 +83,13 @@ fun SmartScheduleApp(pendingUpdateDialog: @Composable () -> Unit = {}) {
     val motion = motionEnabled()
 
     LaunchedEffect(Unit) { TempSwaps.clearExpired(context) }
+    // 心跳：界面在前台期间每 15 秒对一次表；日期翻页时顺手清理过期调课
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(15_000)
+            if (com.enenhhh.smartschedule.util.AppClock.refresh()) TempSwaps.clearExpired(context)
+        }
+    }
 
     BackHandler(enabled = nav.canGoBack) { nav.pop() }
 

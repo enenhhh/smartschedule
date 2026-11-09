@@ -26,7 +26,7 @@ object BackupHelper {
         "start_date", "keep_alive", "persistent_tomorrow", "reminder_enabled", "reminder_hour", "reminder_min",
         "weather_enabled", "weather_hour", "weather_min", "weather_city", "dark_mode", "dynamic_color",
         "auto_check_update", "theme_color", "palette_style", "contrast_level", "amoled_black", "glass_enabled",
-        "glass_intensity", "glass_liquid", "animated_background", "reduce_motion", "custom_seed_color", "show_weekend", "update_source"
+        "glass_intensity", "glass_liquid", "animated_background", "reduce_motion", "custom_seed_color", "show_weekend", "update_source_v2"
     )
 
     data class BackupPreview(

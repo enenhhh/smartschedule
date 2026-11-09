@@ -16,5 +16,7 @@ class App : Application() {
         ThemeState.load(this)
         FontManager.init(this)
         runCatching { NotificationHelper.createChannels(this) }
+        // 保活期间跨天也要刷新「今天」，见 AppClock
+        runCatching { com.enenhhh.smartschedule.util.AppClock.install(this) }
     }
 }

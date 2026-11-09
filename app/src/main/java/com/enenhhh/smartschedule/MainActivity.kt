@@ -59,6 +59,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        // 回到前台立刻对一次表：进程可能已经被保活了好几天
+        if (com.enenhhh.smartschedule.util.AppClock.refresh()) {
+            runCatching { TempSwaps.clearExpired(this) }
+        }
         // 回到前台时刷新常驻通知（课表可能刚改过）
         runCatching {
             if (Prefs.isPersistentEnabled(this) || Prefs.isKeepAlive(this)) NotificationHelper.updatePersistentNotification(this)

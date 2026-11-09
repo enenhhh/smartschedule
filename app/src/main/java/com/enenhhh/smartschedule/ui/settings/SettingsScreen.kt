@@ -43,6 +43,7 @@ import com.enenhhh.smartschedule.ui.nav.Route
 import com.enenhhh.smartschedule.ui.theme.AccentPresets
 import com.enenhhh.smartschedule.ui.theme.ThemeState
 import com.enenhhh.smartschedule.ui.today.topLevelContentPadding
+import com.enenhhh.smartschedule.util.AppClock
 import com.enenhhh.smartschedule.util.DateUtils
 import com.enenhhh.smartschedule.util.Prefs
 import java.time.LocalDate
@@ -59,7 +60,7 @@ fun SettingsScreen() {
     val timetableCount = remember(version) { manager.getTimetables().size }
     val planCount = remember(version) { manager.getTimePlans().size }
     val startSet = Prefs.isStartDateSet(context)
-    val week = DateUtils.weekNumber(Prefs.getStartDate(context), LocalDate.now())
+    val week = DateUtils.weekNumber(Prefs.getStartDate(context), AppClock.today)
 
     LazyColumn(contentPadding = topLevelContentPadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         item {

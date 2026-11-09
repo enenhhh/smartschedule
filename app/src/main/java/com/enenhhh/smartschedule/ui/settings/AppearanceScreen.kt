@@ -209,7 +209,7 @@ fun AppearanceScreen() {
             GlassGroup {
                 SettingSwitchRow(
                     title = "玻璃效果",
-                    subtitle = "卡片、顶栏、底栏呈半透明磨砂质感",
+                    subtitle = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) "卡片、顶栏、底栏呈半透明磨砂质感（真实背景模糊）" else "半透明磨砂质感；Android 12 以下无法实时模糊，使用半透明遮罩代替",
                     icon = Icons.Rounded.BlurOn,
                     checked = ThemeState.glassEnabled,
                     onCheckedChange = { ThemeState.setGlassEnabled(context, it) }
@@ -226,7 +226,7 @@ fun AppearanceScreen() {
                         !ThemeState.glassEnabled -> "已关闭：使用不透明的实色卡片，性能最好。"
                         ThemeState.glassIntensity < 0.3f -> "轻：略带透明，背景几乎不透出来。"
                         ThemeState.glassIntensity < 0.7f -> "适中：有明显的磨砂和高光，兼顾可读性。"
-                        else -> "强：大面积透出背景，模糊半径更大，低端机可能更耗电。"
+                        else -> "强：大面积透出背景，模糊半径最大，低端机可能更耗电。"
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = cs.onSurfaceVariant,
@@ -235,7 +235,7 @@ fun AppearanceScreen() {
                 RowDivider()
                 SettingSwitchRow(
                     title = "液态折射",
-                    subtitle = if (supportsLiquid) "底栏和浮层带边缘折射与高光（Android 13+）" else "需要 Android 13 及以上，当前设备不支持",
+                    subtitle = if (supportsLiquid) "底栏带边缘折射与高光（Android 13+）；关闭后使用毛玻璃" else "需要 Android 13 及以上，当前设备自动使用毛玻璃",
                     icon = Icons.Rounded.WaterDrop,
                     checked = ThemeState.liquidGlass && supportsLiquid,
                     onCheckedChange = { ThemeState.setLiquidGlass(context, it) },

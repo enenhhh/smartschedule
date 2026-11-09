@@ -37,7 +37,7 @@
 **数据**
 - 导出 / 导入配置到任意文件夹
 - **分享码**：生成 6 位数字码，同学输入即可完整导入你的课表
-- 应用内检查更新，多更新源自动测速
+- 应用内检查更新：默认 GitHub Release，可切换自建服务器，多源自动回退与测速
 
 **外观**
 - 四套主题色 + Android 12+ 动态取色
@@ -131,32 +131,37 @@ systemProp.org.gradle.internal.http.socketTimeout=60000
 
 ```
 app/src/main/java/com/enenhhh/smartschedule/
-├── MainActivity.kt              入口，承载首页/课表/作业三个 Compose 屏幕
-├── OnboardingActivity.kt        首启引导（5 步）
-├── SettingsActivity.kt          设置
-├── PlanListActivity.kt          方案管理
-├── TimePlanEditorActivity.kt    时间方案编辑
-├── CoursePlanEditorActivity.kt  课程方案编辑
-├── ShortNameActivity.kt         课程简写
-├── UpdateActivity.kt            更新源测速
-├── AboutActivity.kt / DebugActivity.kt
-├── data/
-│   ├── ScheduleManager.kt       方案读写（带进程级缓存）
-│   ├── HomeworkRepository.kt    作业
-│   └── repository/AppDataRepository.kt   统一数据入口
+├── MainActivity.kt              唯一的 Activity，页面由 Compose 内部导航
+├── App.kt                       Application：主题 / 字体 / 全局时钟初始化
+├── data/                        ScheduleManager（课表读写 + 缓存）/ HomeworkRepository / TempSwaps（临时调课）
+├── models/Models.kt             TimePlan / Timetable / DaySchedule / DayView
+├── legal/                       免责条款、用户须知与同意记录
+├── weather/                     天气与定位城市
 ├── ui/
-│   ├── HomeScreen / ScheduleScreen / HomeworkScreen / SettingsScreen
-│   ├── components/AppComponents.kt       AppDialog / AppTextField / AppTopBar / BrandTitle
-│   └── theme/                            Color / Shape / Type / AppTheme
-├── notifications/NotificationHelper.kt
-├── services/KeepAliveService.kt
-├── receivers/                   开机、定时提醒、天气
-└── util/                        Prefs / BackupHelper / ShareCodeHelper / UpdateChecker / FontManager
+│   ├── app/                     SmartScheduleApp（根布局）/ GlassBottomNav
+│   ├── nav/                     自带的 Navigator
+│   ├── today / timetable / homework / timeplan / onboarding / settings / legal
+│   ├── glass/Glass.kt           液态玻璃 / 毛玻璃
+│   ├── components/              通用组件
+│   └── theme/                   配色 / 形状 / 字体
+├── notifications/  services/  receivers/
+└── util/                        Prefs / AppClock（全局时钟）/ UpdateChecker / BackupHelper / ShareCodeHelper / CrashLogger ...
+server/   分享码服务（PHP）      site/   官网      legal/   条款文本      docs/   发布说明与审计报告
 ```
+
+发布流程见 [docs/RELEASING.md](docs/RELEASING.md)。
 
 ---
 
 ## 版本历史
+
+### 5.1
+
+见 [docs/RELEASE_NOTES_5.1.md](docs/RELEASE_NOTES_5.1.md)。5.0 起 UI 与数据模型整体重做，详见 [docs/AUDIT_5.0.md](docs/AUDIT_5.0.md)。合并进主干后的补充：
+
+- **更新源**：默认从 GitHub Release 检查并下载更新，可在「关于与更新」手动切到自建服务器；GitHub 失败时自动回退。`update.txt` 可带 `sha256:` 行，下载后校验安装包。
+- **毛玻璃**：未开启液态折射或系统低于 Android 13 时使用真实背景模糊（Android 12+）；降低了顶栏 / 底栏的遮罩不透明度，加大模糊半径。Android 11 及以下无法实时模糊，使用半透明遮罩。对话框与底部面板改用独立的半透明面板（它们是独立窗口，取不到背后页面）。
+- **跨天刷新**：新增全局时钟 `AppClock`，回到前台、日期 / 时间 / 时区变化、亮屏解锁及界面心跳都会刷新「今天」。此前进程被保活数天后，课表页会停在打开 App 的那一天。
 
 ### 4.0
 

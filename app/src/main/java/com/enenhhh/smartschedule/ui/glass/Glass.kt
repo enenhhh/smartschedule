@@ -55,11 +55,20 @@ data class GlassSpec(
     val active: Boolean get() = enabled && intensity > 0.01f
     private val t: Float get() = if (active) intensity else 0f
 
-    /** 顶栏 / 底栏的真实背景模糊半径 */
-    val blurRadius: Dp get() = (8f + 28f * t).dp
+    /** 顶栏 / 底栏的真实背景模糊半径（毛玻璃：Android 12+ 真实模糊） */
+    val blurRadius: Dp get() = (14f + 34f * t).dp
 
-    /** 顶栏 / 底栏着色不透明度：强度越高越透 */
-    val barTintAlpha: Float get() = if (dark) 0.92f - 0.20f * t else 0.94f - 0.28f * t
+    /**
+     * 顶栏 / 底栏着色不透明度：强度越高越透。
+     * 真实模糊之后文字依然可读，所以最高强度可以压到 0.36 左右，磨砂感才看得见。
+     */
+    val barTintAlpha: Float get() = if (dark) 0.80f - 0.40f * t else 0.82f - 0.46f * t
+
+    /** 系统不支持真实模糊（Android 11 及以下）时的退化着色：没有模糊就不能太透，否则下层文字会干扰阅读 */
+    val fallbackTintAlpha: Float get() = if (dark) 0.94f - 0.10f * t else 0.94f - 0.12f * t
+
+    /** 独立窗口（对话框 / 底部面板）里的面板不透明度：背后只有遮罩，没有可模糊的内容 */
+    val panelAlpha: Float get() = if (!active) 1f else if (dark) 0.96f - 0.08f * t else 0.97f - 0.10f * t
 
     /** 卡片底色不透明度 */
     val cardAlpha: Float get() = if (!active) 1f else if (dark) 0.94f - 0.18f * t else 0.94f - 0.28f * t
@@ -70,7 +79,7 @@ data class GlassSpec(
     val noise: Float get() = 0.015f + 0.06f * t
 
     /** 背景色块的鲜艳度 */
-    val blobAlpha: Float get() = if (!active || amoled) 0f else (if (dark) 0.18f else 0.34f) + 0.14f * t
+    val blobAlpha: Float get() = if (!active || amoled) 0f else (if (dark) 0.26f else 0.42f) + 0.18f * t
 
     val useLiquid: Boolean get() = active && liquid && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
 
@@ -106,7 +115,7 @@ fun Modifier.glassBar(
             noiseFactor(spec.noise)
             backgroundColor(tint)
             colorEffects(listOf(HazeColorEffect.tint(tint.copy(alpha = spec.barTintAlpha))))
-            fallbackColorEffect(HazeColorEffect.tint(tint.copy(alpha = 0.94f)))
+            fallbackColorEffect(HazeColorEffect.tint(tint.copy(alpha = spec.fallbackTintAlpha)))
         }
     }
     return this
@@ -116,8 +125,26 @@ fun Modifier.glassBar(
 }
 
 /**
+ * 独立窗口（对话框 / 底部面板）里的面板。
+ * 这类内容画在单独的 Window 里，Haze 取样不到下面的页面，真实模糊无从谈起；
+ * 这里改用高不透明度的半透明面板 + 边缘高光，保证文字可读又保留玻璃观感。
+ */
+@Composable
+fun Modifier.glassPanel(
+    shape: Shape,
+    tint: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    spec: GlassSpec = LocalGlass.current
+): Modifier {
+    val base = if (spec.active) tint.copy(alpha = spec.panelAlpha) else tint
+    return this
+        .clip(shape)
+        .background(base, shape)
+        .glassHighlight(shape, spec)
+}
+
+/**
  * 液态玻璃：带折射和高光的小面积表面（底部导航胶囊、悬浮按钮）。
- * Android 13 以下或用户关闭「液态效果」时退化为 [glassBar]。
+ * Android 13 以下或用户关闭「液态折射」时退化为 [glassBar]（毛玻璃）。
  */
 @Composable
 fun Modifier.liquidGlass(
@@ -130,7 +157,7 @@ fun Modifier.liquidGlass(
     val style = remember(spec, tint, shape) {
         GlassStyle.regular.then {
             shape(shape)
-            tint(tint.copy(alpha = if (spec.dark) 0.70f + 0.14f * (1f - spec.intensity) else 0.64f + 0.20f * (1f - spec.intensity)))
+            tint(tint.copy(alpha = if (spec.dark) 0.42f + 0.22f * (1f - spec.intensity) else 0.38f + 0.26f * (1f - spec.intensity)))
             specularIntensity(0.35f + 0.4f * spec.intensity)
         }
     }

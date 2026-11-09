@@ -17,18 +17,52 @@ import java.net.URL
 
 /**
  * 应用内更新（纯 HTTPS）。
- * update.txt 第一行是最新版本号，其余为更新说明（Markdown）；APK 位于 `${baseUrl}${version}.apk`。
+ *
+ * update.txt 的格式（所有更新源通用）：
+ *   第 1 行  最新版本号，如 `5.2`
+ *   可选行   `sha256: <64 位十六进制>`，有则下载后校验 APK，不一致就丢弃
+ *   其余行   更新说明（Markdown）
+ *
+ * 默认走 GitHub Release（不占自己的服务器带宽，服务器被打也不影响更新）；
+ * 设置里可以手动切到自建服务器。首选源失败时会自动依次尝试其它源。
+ *
+ * GitHub Release 的约定（见 docs/RELEASING.md）：tag 为 `v<版本号>`，附件为
+ * `update.txt` 与 `smartschedule-<版本号>.apk`。
  */
 object UpdateChecker {
 
-    data class Source(val name: String, val baseUrl: String)
+    private const val GITHUB_REPO = "enenhhh/smartschedule"
 
+    /**
+     * @param updateUrl 取 update.txt 的地址
+     * @param apkUrlFor 根据版本号给出 APK 地址
+     */
+    data class Source(val name: String, val updateUrl: String, val apkUrlFor: (String) -> String)
+
+    /** 下标 0 是默认源。下标会存进设置，调整顺序前请先想想老用户的存档 */
     val sources = listOf(
-        Source("博客源", "https://blog.enhub.top/files/smartschedule/"),
-        Source("备用源", "https://enhub.top/files/smartschedule/")
+        Source(
+            "GitHub",
+            "https://github.com/$GITHUB_REPO/releases/latest/download/update.txt"
+        ) { v -> "https://github.com/$GITHUB_REPO/releases/download/v$v/smartschedule-$v.apk" },
+        Source(
+            "我的服务器",
+            "https://blog.enhub.top/files/smartschedule/update.txt"
+        ) { v -> "https://blog.enhub.top/files/smartschedule/$v.apk" },
+        Source(
+            "服务器备用",
+            "https://enhub.top/files/smartschedule/update.txt"
+        ) { v -> "https://enhub.top/files/smartschedule/$v.apk" }
     )
 
-    data class UpdateInfo(val latest: String, val changelog: String, val apkUrl: String, val source: Source)
+    data class UpdateInfo(
+        val latest: String,
+        val changelog: String,
+        val apkUrl: String,
+        val source: Source,
+        /** update.txt 里声明的 APK SHA-256（小写十六进制）；没声明则为 null，不做校验 */
+        val sha256: String? = null
+    )
 
     data class SourceTestResult(val source: Source, val latencyMs: Long?, val latest: String?, val error: String?)
 
@@ -49,7 +83,7 @@ object UpdateChecker {
         conn.connectTimeout = timeoutMs
         conn.readTimeout = timeoutMs
         conn.requestMethod = "GET"
-        conn.setRequestProperty("User-Agent", "smartschedule/5.1 (Android)")
+        conn.setRequestProperty("User-Agent", "smartschedule (Android)")
         return try {
             val code = conn.responseCode
             if (code !in 200..299) throw IllegalStateException("HTTP $code")
@@ -69,12 +103,17 @@ object UpdateChecker {
         return 0
     }
 
+    private val SHA_LINE = Regex("(?i)sha-?256\\s*[:=]\\s*([0-9a-f]{64})")
+
     private fun parseUpdateText(text: String, source: Source): UpdateInfo? {
         val lines = text.trim().lines()
         val latest = lines.firstOrNull()?.trim().orEmpty()
-        if (latest.isBlank() || latest.length > 20 || !latest.first().isDigit()) return null
-        val log = lines.drop(1).joinToString("\n").trim()
-        return UpdateInfo(latest, log, "${source.baseUrl}${latest}.apk", source)
+        // 版本号只允许数字和点，因为它会被拼进下载地址
+        if (latest.isBlank() || latest.length > 20 || !latest.first().isDigit() || !latest.all { it.isDigit() || it == '.' }) return null
+        val rest = lines.drop(1)
+        val sha = rest.firstNotNullOfOrNull { SHA_LINE.matchEntire(it.trim())?.groupValues?.get(1)?.lowercase() }
+        val log = rest.filterNot { SHA_LINE.matches(it.trim()) }.joinToString("\n").trim()
+        return UpdateInfo(latest, log, source.apkUrlFor(latest), source, sha)
     }
 
     suspend fun check(ctx: Context, sourceIndex: Int = Prefs.getUpdateSource(ctx)): CheckResult = withContext(Dispatchers.IO) {
@@ -83,7 +122,7 @@ object UpdateChecker {
         for (i in order) {
             val src = sources[i]
             try {
-                val info = parseUpdateText(httpGet("${src.baseUrl}update.txt"), src) ?: throw IllegalStateException("更新信息格式错误")
+                val info = parseUpdateText(httpGet(src.updateUrl), src) ?: throw IllegalStateException("更新信息格式错误")
                 Prefs.setLastUpdateCheck(ctx, System.currentTimeMillis())
                 return@withContext if (compareVersion(info.latest, currentVersion(ctx)) > 0) CheckResult.UpdateAvailable(info)
                 else CheckResult.UpToDate(info.latest)
@@ -98,7 +137,7 @@ object UpdateChecker {
         sources.map { src ->
             val start = System.currentTimeMillis()
             try {
-                val text = httpGet("${src.baseUrl}update.txt", 6000)
+                val text = httpGet(src.updateUrl, 6000)
                 val info = parseUpdateText(text, src)
                 SourceTestResult(src, System.currentTimeMillis() - start, info?.latest, null)
             } catch (e: Exception) {
@@ -122,6 +161,7 @@ object UpdateChecker {
         val dir = ctx.getExternalFilesDir("downloads") ?: ctx.filesDir
         if (!dir.exists()) dir.mkdirs()
         val file = File(dir, "smartschedule_${info.latest.filter { it.isLetterOrDigit() || it == '.' }}.apk")
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
         try {
             conn.inputStream.use { input ->
                 FileOutputStream(file).use { out ->
@@ -131,6 +171,7 @@ object UpdateChecker {
                         val n = input.read(buf)
                         if (n < 0) break
                         out.write(buf, 0, n)
+                        digest.update(buf, 0, n)
                         sum += n
                         onProgress(if (total > 0) (sum.toFloat() / total).coerceIn(0f, 1f) else -1f)
                     }
@@ -141,6 +182,13 @@ object UpdateChecker {
             conn.disconnect()
         }
         if (file.length() < 100 * 1024) { file.delete(); throw IllegalStateException("下载的文件不完整") }
+        info.sha256?.let { expected ->
+            val actual = digest.digest().joinToString("") { "%02x".format(it) }
+            if (!actual.equals(expected, ignoreCase = true)) {
+                file.delete()
+                throw IllegalStateException("安装包校验失败（SHA-256 不一致），已丢弃。请换一个更新源重试")
+            }
+        }
         runCatching { NotificationHelper.notifyApkDownloaded(ctx, file, info.latest) }
         file
     }
