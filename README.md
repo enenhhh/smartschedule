@@ -202,6 +202,12 @@ server/   分享码服务（PHP）      pages/   GitHub Pages 官网（部署在
 
 ---
 
+## 许可证
+
+[MIT](LICENSE) © 2026 恩恩hhh
+
+---
+
 ## 反馈
 
 - GitHub Issues
