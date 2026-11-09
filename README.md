@@ -2,6 +2,8 @@
 
 一个面向中学 / 大学的课表应用，专门处理**单双周轮换**的课表结构，并在首页实时显示当前上到第几节、还剩多久下课。
 
+官网：<https://enenhhh.github.io/smartschedule/> · 下载：[GitHub Releases](https://github.com/enenhhh/smartschedule/releases)
+
 - 纯 Kotlin + Jetpack Compose + Material 3
 - 无账号、无后台、数据全部存在本机
 - Release 包 **2.5 MB**
@@ -146,7 +148,7 @@ app/src/main/java/com/enenhhh/smartschedule/
 │   └── theme/                   配色 / 形状 / 字体
 ├── notifications/  services/  receivers/
 └── util/                        Prefs / AppClock（全局时钟）/ UpdateChecker / BackupHelper / ShareCodeHelper / CrashLogger ...
-server/   分享码服务（PHP）      site/   官网      legal/   条款文本      docs/   发布说明与审计报告
+server/   分享码服务（PHP）      pages/   GitHub Pages 官网（部署在 gh-pages 分支）      site/   旧版官网（自建服务器）      legal/   条款文本      docs/   发布说明与审计报告
 ```
 
 发布流程见 [docs/RELEASING.md](docs/RELEASING.md)。

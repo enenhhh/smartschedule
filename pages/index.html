@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="zh-CN" data-mode="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>智能课表 · 单双周，自动接上</title>
+<meta name="description" content="智能课表：专为单双周轮换设计的 Android 课表应用。首页实时显示现在上到第几节、还剩几分钟下课。无账号、数据只存本机，安装包仅约 2.6 MB。">
+<meta name="theme-color" content="#f4f8ff">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="智能课表 · 单双周，自动接上">
+<meta property="og:description" content="专为单双周轮换设计的 Android 课表。实时上课状态、6 位分享码、作业甘特图。约 2.6 MB，无账号。">
+<meta property="og:type" content="website">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<script>
+(function(){try{var m=localStorage.getItem('ss-mode')||'system';var d=m==='dark'||(m==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.mode=d?'dark':'light';var a=localStorage.getItem('ss-accent');if(/^#[0-9a-f]{6}$/i.test(a||''))document.documentElement.style.setProperty('--accent',a);}catch(e){}
+document.documentElement.classList.add('js');})();
+</script>
+<style>
+:root{
+  --accent:#006bdf;
+  --mint:#2bc4a0;
+  --bg:#f4f8ff;
+  --panel:#ffffff;
+  --ink:#0e1a2c;
+  --muted:#58687e;
+  --line:rgba(14,26,44,.09);
+  --soft:color-mix(in srgb,var(--accent) 10%,var(--bg));
+  --soft2:color-mix(in srgb,var(--accent) 18%,var(--bg));
+  --accent-ink:var(--accent);
+  --on-accent:#fff;
+  --glass:rgba(255,255,255,.62);
+  --glass-line:rgba(255,255,255,.9);
+  --shadow:0 1px 2px rgba(14,26,44,.04),0 18px 48px -12px rgba(14,60,130,.18);
+  --shadow-lg:0 2px 4px rgba(14,26,44,.05),0 40px 90px -24px rgba(0,80,180,.35);
+  --radius:28px;
+  --g:.6;
+}
+:root[data-mode="dark"]{
+  --bg:#08111f;--panel:#0f1b2f;--ink:#eaf1fc;--muted:#9fb0c7;--line:rgba(200,220,255,.12);
+  --soft:color-mix(in srgb,var(--accent) 16%,var(--bg));--soft2:color-mix(in srgb,var(--accent) 26%,var(--bg));
+  --accent-ink:color-mix(in srgb,var(--accent) 55%,#fff);
+  --glass:rgba(15,27,47,.6);--glass-line:rgba(190,215,255,.16);
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 18px 48px -12px rgba(0,0,0,.5);
+  --shadow-lg:0 2px 4px rgba(0,0,0,.3),0 40px 90px -24px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:88px;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;overflow-x:clip;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;cursor:pointer}
+img,svg{display:block;max-width:100%}
+.wrap{width:min(1160px,calc(100% - 48px));margin:0 auto}
+.skip{position:absolute;left:-999px;top:8px;background:var(--accent);color:#fff;padding:8px 14px;border-radius:10px;z-index:100}
+.skip:focus{left:8px}
+:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 60%,transparent);outline-offset:3px;border-radius:10px}
+.icon{width:1.25em;height:1.25em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ---------- 背景光斑 ---------- */
+.aurora{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.aurora i{position:absolute;border-radius:50%;filter:blur(90px);opacity:.55;animation:drift 22s ease-in-out infinite alternate}
+.aurora i:nth-child(1){width:560px;height:560px;left:-140px;top:-120px;background:color-mix(in srgb,var(--accent) 55%,#7fd6ff)}
+.aurora i:nth-child(2){width:480px;height:480px;right:-120px;top:120px;background:#7ef0d0;animation-delay:-6s;opacity:.4}
+.aurora i:nth-child(3){width:520px;height:520px;left:30%;top:62%;background:color-mix(in srgb,var(--accent) 40%,#c9b8ff);animation-delay:-12s;opacity:.3}
+:root[data-mode="dark"] .aurora i{opacity:.28}
+:root[data-mode="dark"] .aurora i:nth-child(2){opacity:.16}
+:root[data-mode="dark"] .aurora i:nth-child(3){opacity:.18}
+@keyframes drift{to{transform:translate(70px,50px) scale(1.12)}}
+
+/* ---------- 导航 ---------- */
+.nav{position:sticky;top:12px;z-index:50;margin-top:12px}
+.nav-in{display:flex;align-items:center;gap:20px;height:60px;padding:0 10px 0 18px;border-radius:999px;background:var(--glass);border:1px solid var(--glass-line);backdrop-filter:blur(22px) saturate(1.6);-webkit-backdrop-filter:blur(22px) saturate(1.6);box-shadow:var(--shadow)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;letter-spacing:.2px}
+.brand svg{width:30px;height:30px}
+.links{display:flex;gap:4px;margin-left:auto}
+.links a{padding:8px 14px;border-radius:999px;font-size:14px;color:var(--muted);transition:.2s}
+.links a:hover{color:var(--ink);background:var(--soft)}
+.icon-btn{width:40px;height:40px;border-radius:50%;border:0;background:transparent;display:grid;place-items:center;color:var(--muted);transition:.2s}
+.icon-btn:hover{background:var(--soft);color:var(--ink)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 26px;border-radius:999px;border:1px solid transparent;font-weight:600;font-size:16px;transition:transform .2s,box-shadow .2s,background .2s}
+.btn.primary{background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 65%,#00c2e0));color:var(--on-accent);box-shadow:0 10px 28px -8px color-mix(in srgb,var(--accent) 70%,transparent)}
+.btn.primary:hover{transform:translateY(-2px);box-shadow:0 16px 36px -8px color-mix(in srgb,var(--accent) 75%,transparent)}
+.btn.ghost{background:var(--glass);border-color:var(--line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.btn.ghost:hover{background:var(--soft);transform:translateY(-2px)}
+.btn.sm{height:40px;padding:0 18px;font-size:14px}
+
+/* ---------- Hero ---------- */
+.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center;padding:48px 0 56px;min-height:calc(100svh - 110px)}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:6px 14px 6px 8px;border-radius:999px;background:var(--glass);border:1px solid var(--glass-line);font-size:13px;color:var(--muted);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.pill b{background:var(--accent);color:#fff;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:600}
+h1{margin:22px 0 0;font-size:clamp(44px,6.4vw,84px);line-height:1.04;letter-spacing:-.04em;font-weight:800}
+.grad{background:linear-gradient(100deg,var(--accent) 10%,var(--mint) 90%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{margin:24px 0 0;font-size:clamp(17px,1.6vw,20px);color:var(--muted);max-width:30em}
+.lead strong{color:var(--ink);font-weight:600}
+.cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:34px}
+.facts{display:flex;flex-wrap:wrap;gap:8px 22px;margin:28px 0 0;padding:0;list-style:none;color:var(--muted);font-size:14px}
+.facts li{display:flex;align-items:center;gap:7px}
+.facts .icon{color:var(--accent-ink);width:1.1em;height:1.1em}
+
+/* 手机 */
+.stage{position:relative;display:grid;place-items:center;min-height:600px}
+.phone{position:relative;width:300px;aspect-ratio:300/616;border-radius:46px;padding:11px;background:linear-gradient(160deg,#25354f,#0c1626);box-shadow:var(--shadow-lg),inset 0 0 0 1.5px rgba(255,255,255,.12);transform:rotate(-2.5deg);transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+.phone:hover{transform:rotate(0) translateY(-6px)}
+.screen{position:relative;height:100%;border-radius:36px;overflow:hidden;background:var(--bg);padding:42px 14px 14px;display:flex;flex-direction:column;gap:11px}
+.screen:before{content:"";position:absolute;left:50%;top:10px;width:84px;height:22px;border-radius:99px;background:#0a1220;transform:translateX(-50%);z-index:3}
+.screen .mesh{position:absolute;inset:0;z-index:0;background:radial-gradient(120% 60% at 0% 0%,color-mix(in srgb,var(--accent) 22%,transparent),transparent 60%),radial-gradient(90% 50% at 100% 30%,rgba(43,196,160,.2),transparent 60%)}
+.screen>*{position:relative;z-index:1}
+.s-head{display:flex;justify-content:space-between;align-items:flex-end}
+.s-head small{display:block;color:var(--muted);font-size:11px}
+.s-head h3{margin:0;font-size:20px;letter-spacing:-.02em}
+.chip{font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px;background:var(--soft2);color:var(--accent-ink)}
+.now{border-radius:22px;padding:15px;background:linear-gradient(150deg,var(--accent),color-mix(in srgb,var(--accent) 60%,#00bcd4));color:#fff;box-shadow:0 14px 30px -12px color-mix(in srgb,var(--accent) 80%,transparent)}
+.now small{opacity:.85;font-size:11px}
+.now h4{margin:2px 0 0;font-size:22px;letter-spacing:-.02em}
+.count{display:flex;align-items:baseline;gap:6px;margin-top:10px}
+.count b{font-size:34px;font-variant-numeric:tabular-nums;letter-spacing:-.03em;line-height:1}
+.count span{font-size:12px;opacity:.85}
+.bar{height:7px;border-radius:9px;background:rgba(255,255,255,.28);margin-top:12px;overflow:hidden}
+.bar i{display:block;height:100%;width:54%;border-radius:9px;background:#fff;transition:width 1s linear}
+.tl{display:flex;flex-direction:column;gap:6px}
+.row{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:15px;background:var(--glass);border:1px solid var(--glass-line);font-size:12.5px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.row em{font-style:normal;color:var(--muted);font-size:11px;width:46px;font-variant-numeric:tabular-nums}
+.row b{font-weight:600}
+.row.done{opacity:.55}
+.row.cur{border-color:color-mix(in srgb,var(--accent) 50%,transparent)}
+.row .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);margin-left:auto}
+.row.done .dot{background:var(--mint)}
+.row.next .dot{background:transparent;border:2px solid var(--muted);opacity:.6}
+.tabbar{margin-top:auto;display:flex;justify-content:space-around;padding:9px;border-radius:99px;background:var(--glass);border:1px solid var(--glass-line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.tabbar span{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
+.tabbar span.on{background:var(--accent);color:#fff}
+.tabbar .icon{width:17px;height:17px}
+.float{position:absolute;z-index:5;display:flex;align-items:center;gap:10px;padding:11px 16px 11px 12px;border-radius:18px;background:var(--glass);border:1px solid var(--glass-line);box-shadow:var(--shadow);font-size:13px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);animation:bob 6s ease-in-out infinite}
+.float .ic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:var(--soft2);color:var(--accent-ink)}
+.float small{display:block;color:var(--muted);font-size:11px;line-height:1.3}
+.float b{display:block;line-height:1.3}
+.f1{left:-7%;top:15%}.f2{right:-5%;bottom:18%;animation-delay:-3s}
+@keyframes bob{50%{transform:translateY(-9px)}}
+
+/* ---------- 通用 section ---------- */
+section{padding:96px 0}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;letter-spacing:.14em;color:var(--accent-ink);text-transform:uppercase}
+.eyebrow:before{content:"";width:22px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--accent),var(--mint))}
+h2{margin:14px 0 0;font-size:clamp(32px,4.4vw,54px);line-height:1.12;letter-spacing:-.035em;font-weight:800}
+.sec-lead{margin:18px 0 0;max-width:34em;color:var(--muted);font-size:18px}
+.card{position:relative;border-radius:var(--radius);background:var(--glass);border:1px solid var(--glass-line);box-shadow:var(--shadow);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4)}
+
+/* ---------- 数据条 ---------- */
+.stats{padding:0 0 24px}
+.stats .card{display:grid;grid-template-columns:repeat(4,1fr);padding:30px 12px}
+.stat{padding:6px 22px;text-align:center;border-left:1px solid var(--line)}
+.stat:first-child{border:0}
+.stat b{display:block;font-size:clamp(30px,3.6vw,46px);line-height:1.1;letter-spacing:-.03em;font-weight:800}
+.stat b i{font-style:normal;font-size:.5em;font-weight:700;margin-left:2px;color:var(--muted)}
+.stat span{font-size:14px;color:var(--muted)}
+
+/* ---------- 单双周 ---------- */
+.split{display:grid;grid-template-columns:.9fr 1.1fr;gap:56px;align-items:center}
+.points{list-style:none;margin:30px 0 0;padding:0;display:grid;gap:18px}
+.points li{display:flex;gap:16px}
+.points .n{flex:none;width:40px;height:40px;border-radius:14px;background:var(--soft2);color:var(--accent-ink);display:grid;place-items:center;font-weight:800}
+.points b{display:block;font-size:17px}
+.points p{margin:2px 0 0;color:var(--muted);font-size:15px}
+.demo{padding:26px;box-shadow:var(--shadow-lg)}
+.demo-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.seg{display:inline-flex;padding:4px;border-radius:999px;background:var(--soft);border:1px solid var(--line)}
+.seg button{border:0;background:transparent;padding:8px 20px;border-radius:999px;font-size:14px;font-weight:600;color:var(--muted);transition:.25s}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff;box-shadow:0 6px 16px -6px color-mix(in srgb,var(--accent) 80%,transparent)}
+.demo-top small{color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:44px repeat(5,1fr);gap:7px;margin-top:20px}
+.grid .h{font-size:12px;color:var(--muted);text-align:center;padding:2px 0 6px;font-weight:600}
+.grid .p{font-size:12px;color:var(--muted);display:grid;place-items:center;font-variant-numeric:tabular-nums}
+.cell{min-height:52px;border-radius:14px;display:grid;place-items:center;font-size:14px;font-weight:600;background:var(--soft);border:1px solid transparent;transition:background .35s,transform .35s,border-color .35s,color .35s}
+.cell.diff{background:color-mix(in srgb,var(--accent) 16%,var(--panel));border-color:color-mix(in srgb,var(--accent) 45%,transparent);color:var(--accent-ink)}
+.cell.flip{animation:pop .45s cubic-bezier(.3,1.5,.5,1)}
+@keyframes pop{0%{transform:scale(.82);opacity:.3}100%{transform:none;opacity:1}}
+.legend{display:flex;gap:18px;margin-top:18px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:6px;vertical-align:-1px;background:var(--soft2)}
+.legend i.d{background:color-mix(in srgb,var(--accent) 45%,var(--panel))}
+
+/* ---------- Bento ---------- */
+.bento{display:grid;grid-template-columns:repeat(6,1fr);gap:18px;margin-top:48px}
+.b{padding:28px;overflow:hidden;transition:transform .3s,box-shadow .3s}
+.b:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+.b .tag{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:15px;background:var(--soft2);color:var(--accent-ink);margin-bottom:16px}
+.b h3{margin:0;font-size:21px;letter-spacing:-.02em}
+.b p{margin:8px 0 0;color:var(--muted);font-size:15px}
+.s2{grid-column:span 2}.s3{grid-column:span 3}.s4{grid-column:span 4}
+.code{display:flex;gap:7px;margin-top:20px}
+.code span{flex:1;height:54px;border-radius:14px;background:var(--soft);display:grid;place-items:center;font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--accent-ink);border:1px solid var(--line)}
+.gantt{margin-top:20px;display:grid;gap:8px}
+.gantt div{height:22px;border-radius:99px;background:var(--soft);position:relative}
+.gantt div i{position:absolute;top:0;bottom:0;border-radius:99px;font-style:normal;font-size:11px;color:#fff;display:flex;align-items:center;padding-left:10px;font-weight:600}
+.notif{margin-top:20px;display:grid;gap:8px}
+.notif div{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:14px;background:var(--soft);font-size:13px}
+.notif .icon{color:var(--accent-ink)}
+.notif small{display:block;color:var(--muted);font-size:11px}
+.swap{display:flex;align-items:center;gap:10px;margin-top:20px;flex-wrap:wrap}
+.swap span{padding:9px 16px;border-radius:14px;background:var(--soft);font-weight:600;font-size:14px}
+.swap span.t{background:color-mix(in srgb,var(--accent) 16%,var(--panel));color:var(--accent-ink);border:1px dashed color-mix(in srgb,var(--accent) 55%,transparent)}
+.swap .icon{color:var(--muted)}
+
+/* ---------- 外观 ---------- */
+.look{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+.swatches{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}
+.sw{width:44px;height:44px;border-radius:50%;border:3px solid var(--panel);box-shadow:0 0 0 1.5px var(--line),var(--shadow);transition:transform .2s,box-shadow .2s;position:relative}
+.sw:hover{transform:scale(1.12)}
+.sw[aria-pressed="true"]{box-shadow:0 0 0 3px var(--accent-ink),var(--shadow)}
+.sw[aria-pressed="true"]:after{content:"";position:absolute;inset:0;margin:auto;width:10px;height:6px;border-left:2.5px solid #fff;border-bottom:2.5px solid #fff;transform:translateY(-1px) rotate(-45deg);height:5px}
+.ctl{display:grid;gap:18px;margin-top:30px;max-width:420px}
+.ctl label{display:flex;justify-content:space-between;font-size:14px;font-weight:600}
+.ctl label span{color:var(--muted);font-weight:500}
+input[type=range]{width:100%;accent-color:var(--accent);height:30px}
+.preview{position:relative;border-radius:36px;padding:34px;min-height:400px;overflow:hidden;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow-lg);isolation:isolate}
+.preview .blob{position:absolute;border-radius:50%;filter:blur(36px);z-index:-1}
+.preview .b1{width:220px;height:220px;left:-30px;top:-20px;background:var(--accent);opacity:.75}
+.preview .b2{width:200px;height:200px;right:-20px;top:90px;background:var(--mint);opacity:.75}
+.preview .b3{width:230px;height:230px;left:30%;bottom:-70px;background:#a28bff;opacity:.6}
+.gl{padding:20px;border-radius:24px;background:rgba(255,255,255,calc(.9 - var(--g)*.62));border:1px solid rgba(255,255,255,calc(.35 + var(--g)*.5));backdrop-filter:blur(calc(6px + var(--g)*30px)) saturate(1.5);-webkit-backdrop-filter:blur(calc(6px + var(--g)*30px)) saturate(1.5);box-shadow:0 12px 40px -14px rgba(0,40,100,.4);color:#0e1a2c;margin-bottom:14px}
+:root[data-mode="dark"] .gl{background:rgba(15,27,47,calc(.9 - var(--g)*.5));border-color:rgba(190,215,255,calc(.1 + var(--g)*.2));color:#eaf1fc}
+.gl small{opacity:.7;font-size:12px}
+.gl h4{margin:2px 0 0;font-size:19px}
+.gl .pb{height:8px;border-radius:9px;background:rgba(0,0,0,.1);margin-top:14px}
+.gl .pb i{display:block;height:100%;width:62%;border-radius:9px;background:var(--accent)}
+
+/* ---------- 隐私 ---------- */
+.priv{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:48px}
+.priv .card{padding:30px}
+.priv h3{margin:14px 0 0;font-size:20px}
+.priv p{margin:8px 0 0;color:var(--muted);font-size:15px}
+.priv .tag{display:grid;place-items:center;width:46px;height:46px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--mint));color:#fff}
+.fine{margin-top:22px;color:var(--muted);font-size:14px}
+.fine a{color:var(--accent-ink);text-decoration:underline;text-underline-offset:3px}
+
+/* ---------- 下载 ---------- */
+.dl{padding:56px;text-align:center;overflow:hidden;box-shadow:var(--shadow-lg);background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 14%,var(--glass)),var(--glass))}
+.dl h2{margin-top:12px}
+.dl .sec-lead{margin-left:auto;margin-right:auto}
+.dl .cta{justify-content:center}
+.dl-meta{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin-top:30px}
+.dl-meta span{padding:7px 16px;border-radius:999px;background:var(--soft);border:1px solid var(--line);font-size:13px;color:var(--muted)}
+.dl-meta b{color:var(--ink);font-weight:600}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:40px;text-align:left}
+.steps div{padding:18px 20px;border-radius:20px;background:var(--soft);font-size:14px;color:var(--muted)}
+.steps b{display:block;color:var(--ink);font-size:15px;margin-bottom:2px}
+.hash{margin-top:22px;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--muted);word-break:break-all}
+
+footer{padding:40px 0 56px;color:var(--muted);font-size:14px}
+.foot{display:flex;flex-wrap:wrap;gap:14px 28px;justify-content:space-between;align-items:center;padding-top:28px;border-top:1px solid var(--line)}
+.foot nav{display:flex;flex-wrap:wrap;gap:6px 22px}
+.foot a:hover{color:var(--ink)}
+
+/* ---------- 动效 ---------- */
+.js .rv{opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
+.js .rv.in{opacity:1;transform:none}
+.js .rv.d1{transition-delay:.08s}.js .rv.d2{transition-delay:.16s}.js .rv.d3{transition-delay:.24s}
+
+/* ---------- 响应式 ---------- */
+@media(max-width:980px){
+  .hero{grid-template-columns:1fr;min-height:0;padding-top:48px;gap:20px}
+  .stage{min-height:560px}
+  .split,.look{grid-template-columns:1fr;gap:36px}
+  .bento{grid-template-columns:repeat(2,1fr)}
+  .s2,.s3,.s4{grid-column:span 1}.bento .wide{grid-column:span 2}
+  .priv,.steps{grid-template-columns:1fr}
+  .stats .card{grid-template-columns:repeat(2,1fr);row-gap:20px}
+  .stat:nth-child(3){border-left:0}
+}
+@media(max-width:640px){
+  .wrap{width:calc(100% - 32px)}
+  .links{display:none}.nav-in{justify-content:space-between}.nav-in .icon-btn{margin-left:auto}
+  section{padding:68px 0}
+  .bento{grid-template-columns:1fr}.bento .wide{grid-column:span 1}
+  .float{display:none}
+  .dl{padding:34px 20px}
+  .demo{padding:18px}.grid{grid-template-columns:34px repeat(5,1fr);gap:5px}.cell{min-height:46px;font-size:12px;border-radius:11px}
+  .stage{min-height:0;padding:16px 0}
+  .btn{height:50px}
+}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*:before,*:after{animation:none!important;transition:none!important}
+  .js .rv{opacity:1;transform:none}
+}
+@supports not (backdrop-filter:blur(1px)){.card,.nav-in,.row,.float,.pill,.tabbar{background:var(--panel)}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">跳到正文</a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+<symbol id="i-share" viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.6"/><circle cx="17.5" cy="6" r="2.6"/><circle cx="17.5" cy="18" r="2.6"/><path d="M8.3 10.8l7-3.6M8.3 13.2l7 3.6"/></symbol>
+<symbol id="i-book" viewBox="0 0 24 24"><path d="M5 4.5h10a3 3 0 013 3V20H8a3 3 0 01-3-3V4.5z"/><path d="M5 17a3 3 0 013-3h10"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 1112 0v5.5l1.5 2h-15L6 16.5z"/><path d="M10 21h4"/></symbol>
+<symbol id="i-swap" viewBox="0 0 24 24"><path d="M5 8h13l-3-3M19 16H6l3 3"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="3"/><path d="M8.5 10.5V8a3.5 3.5 0 017 0v2.5"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></symbol>
+<symbol id="i-gh" viewBox="0 0 24 24"><path d="M9 19c-4 1.3-4-2-6-2.5M15 21v-3.2a2.8 2.8 0 00-.8-2.2c2.700-.3 5.500-1.300 5.500-6a4.600 4.600 0 00-1.300-3.200 4.300 4.300 0 00-.1-3.200s-1-.3-3.300 1.300a11.400 11.400 0 00-6 0C6.700 2.900 5.700 3.200 5.700 3.200a4.300 4.300 0 00-.1 3.200A4.600 4.600 0 004.300 9.600c0 4.600 2.800 5.600 5.500 6a2.800 2.800 0 00-.8 2.200V21"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.500A8 8 0 019.500 4 8 8 0 1020 14.500z"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.500v2.500M12 19v2.500M2.500 12H5M19 12h2.500M5.300 5.300l1.800 1.800M16.900 16.900l1.800 1.800M5.300 18.700l1.800-1.800M16.900 7.100l1.800-1.800"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.100 7-11.500A7 7 0 005 9.500C5 14.900 12 21 12 21z"/><circle cx="12" cy="9.500" r="2.500"/></symbol>
+<symbol id="i-feather" viewBox="0 0 24 24"><path d="M20 4c-8 0-13 4-13 11v3M20 4c0 8-4 13-11 13H7M7 18l6-6"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-6.500 8 6.500V19a1.500 1.500 0 01-1.500 1.500h-4v-5.500h-5v5.500h-4A1.500 1.500 0 014 19v-8z"/></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.400 15a1.700 1.700 0 00.3 1.800l.1.100a2 2 0 11-2.800 2.800l-.1-.1a1.700 1.700 0 00-1.800-.3 1.700 1.700 0 00-1 1.500V21a2 2 0 11-4 0v-.1a1.700 1.700 0 00-1.100-1.500 1.700 1.700 0 00-1.800.3l-.1.1a2 2 0 11-2.800-2.800l.1-.1a1.700 1.700 0 00.3-1.800 1.700 1.700 0 00-1.500-1H3a2 2 0 110-4h.1a1.700 1.700 0 001.500-1.100 1.700 1.700 0 00-.3-1.800l-.1-.1a2 2 0 112.800-2.800l.1.100a1.700 1.700 0 001.800.3H9a1.700 1.700 0 001-1.500V3a2 2 0 114 0v.1a1.700 1.700 0 001 1.500 1.700 1.700 0 001.800-.3l.1-.1a2 2 0 112.800 2.800l-.1.100a1.700 1.700 0 00-.3 1.800V9a1.700 1.700 0 001.500 1H21a2 2 0 110 4h-.1a1.700 1.700 0 00-1.500 1z"/></symbol>
+<symbol id="i-mark" viewBox="0 0 64 64"><defs><linearGradient id="mg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#24395f"/><stop offset="1" stop-color="#152340"/></linearGradient></defs><rect width="64" height="64" rx="18" fill="url(#mg)"/><rect x="14" y="16" width="36" height="34" rx="6" fill="#f7f9fc"/><path d="M14 22a6 6 0 016-6h24a6 6 0 016 6v4H14z" fill="#1b2a4a"/><circle cx="24" cy="21" r="2" fill="#9fe1cb"/><circle cx="40" cy="21" r="2" fill="#9fe1cb"/><rect x="21" y="32" width="9" height="5" rx="2.500" fill="#006bdf"/><rect x="34" y="32" width="9" height="5" rx="2.500" fill="#9fe1cb"/><rect x="21" y="41" width="9" height="5" rx="2.500" fill="#9fe1cb"/><rect x="34" y="41" width="9" height="5" rx="2.500" fill="#006bdf"/></symbol>
+</defs></svg>
+
+<div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+
+<header class="nav wrap">
+  <div class="nav-in">
+    <a class="brand" href="#top" aria-label="智能课表"><svg><use href="#i-mark"/></svg>智能课表</a>
+    <nav class="links" aria-label="主导航">
+      <a href="#weeks">单双周</a><a href="#features">功能</a><a href="#look">外观</a><a href="#privacy">隐私</a><a href="#download">下载</a>
+    </nav>
+    <button class="icon-btn" id="modeBtn" aria-label="切换深浅色"><svg class="icon" id="modeIcon"><use href="#i-moon"/></svg></button>
+    <a class="btn primary sm" href="#download">下载</a>
+  </div>
+</header>
+
+<main id="main">
+<!-- ================= Hero ================= -->
+<div class="wrap hero" id="top">
+  <div>
+    <span class="pill rv"><b>5.2</b> Android 8.0+ · 开源 · 无需账号</span>
+    <h1 class="rv d1">单双周，<br><span class="grad">自动接上。</span></h1>
+    <p class="lead rv d2">专为<strong>单双周轮换</strong>设计的课表。打开就知道<strong>现在上到第几节、还剩几分钟下课</strong>，到了周一自动换成另一套课，不用再手动翻。</p>
+    <div class="cta rv d3">
+      <a class="btn primary" href="#download"><svg class="icon"><use href="#i-down"/></svg>下载 APK</a>
+      <a class="btn ghost" href="https://github.com/enenhhh/smartschedule" rel="noopener"><svg class="icon"><use href="#i-gh"/></svg>查看源码</a>
+    </div>
+    <ul class="facts rv d3">
+      <li><svg class="icon"><use href="#i-feather"/></svg>安装包约 2.6 MB</li>
+      <li><svg class="icon"><use href="#i-lock"/></svg>数据只存在你的手机</li>
+      <li><svg class="icon"><use href="#i-share"/></svg>6 位分享码一键导入</li>
+    </ul>
+  </div>
+
+  <div class="stage rv d2" aria-label="应用首页示意">
+    <div class="float f1"><span class="ic"><svg class="icon"><use href="#i-swap"/></svg></span><div><small>周一 00:00</small><b>自动切换为双周课表</b></div></div>
+    <div class="phone">
+      <div class="screen">
+        <div class="mesh"></div>
+        <div class="s-head"><div><small>11月9日 周一</small><h3>今天</h3></div><span class="chip">第 12 周 · 双周</span></div>
+        <div class="now">
+          <small>上课中</small>
+          <h4>第 3 节 · 数学</h4>
+          <div class="count"><b id="cd">18:24</b><span>后下课</span></div>
+          <div class="bar"><i id="cdbar"></i></div>
+        </div>
+        <div class="tl">
+          <div class="row done"><em>08:00</em><b>语文</b><i class="dot"></i></div>
+          <div class="row done"><em>08:50</em><b>英语</b><i class="dot"></i></div>
+          <div class="row cur"><em>09:50</em><b>数学</b><i class="dot"></i></div>
+          <div class="row next"><em>10:40</em><b>物理</b><i class="dot"></i></div>
+          <div class="row next"><em>14:00</em><b>体育</b><i class="dot"></i></div>
+        </div>
+        <div class="tabbar" aria-hidden="true">
+          <span class="on"><svg class="icon"><use href="#i-home"/></svg></span>
+          <span><svg class="icon"><use href="#i-cal"/></svg></span>
+          <span><svg class="icon"><use href="#i-book"/></svg></span>
+          <span><svg class="icon"><use href="#i-gear"/></svg></span>
+        </div>
+      </div>
+    </div>
+    <div class="float f2"><span class="ic"><svg class="icon"><use href="#i-share"/></svg></span><div><small>同学发来的分享码</small><b>482 913 · 一键导入</b></div></div>
+  </div>
+</div>
+
+<!-- ================= 数据条 ================= -->
+<div class="wrap stats rv">
+  <div class="card">
+    <div class="stat"><b>2.6<i>MB</i></b><span>Release 安装包</span></div>
+    <div class="stat"><b>0</b><span>账号 · 无需注册</span></div>
+    <div class="stat"><b>6<i>位</i></b><span>数字分享码</span></div>
+    <div class="stat"><b>12</b><span>预设主题色</span></div>
+  </div>
+</div>
+
+<!-- ================= 单双周 ================= -->
+<section id="weeks">
+  <div class="wrap split">
+    <div>
+      <span class="eyebrow rv">核心功能</span>
+      <h2 class="rv d1">单周一套，<br>双周另一套。</h2>
+      <p class="sec-lead rv d2">轮换课表最烦的是每周手动翻页。填一次开学日期，之后每一周是单周还是双周，应用自己算。</p>
+      <ul class="points">
+        <li class="rv"><span class="n">1</span><div><b>按天决定要不要区分</b><p>只有周三的物理课隔周不同？只给周三开启「单双周不同」，其余天共用一套。</p></div></li>
+        <li class="rv d1"><span class="n">2</span><div><b>周一对齐，不会算错</b><p>以周一作为一周的起点计算周次，开学日不在周一、周日看明天的课，都不会错一周。</p></div></li>
+        <li class="rv d2"><span class="n">3</span><div><b>时间方案可复用</b><p>上下课时间单独成方案，几张课表共用同一套作息，改一处全都生效。</p></div></li>
+      </ul>
+    </div>
+    <div class="card demo rv d1" aria-label="单双周互动演示">
+      <div class="demo-top">
+        <div class="seg" role="group" aria-label="选择周类型">
+          <button type="button" id="wOdd" aria-pressed="true">单周</button>
+          <button type="button" id="wEven" aria-pressed="false">双周</button>
+        </div>
+        <small id="wNote">点一下，看看不同的格子怎么变</small>
+      </div>
+      <div class="grid" id="grid" role="table" aria-label="示例课表"></div>
+      <div class="legend"><span><i></i>每周相同</span><span><i class="d"></i>单双周不同</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 功能 ================= -->
+<section id="features" style="padding-top:24px">
+  <div class="wrap">
+    <span class="eyebrow rv">更多功能</span>
+    <h2 class="rv d1">课表之外，<br>该有的都有。</h2>
+    <div class="bento">
+      <article class="card b s4 wide rv">
+        <span class="tag"><svg class="icon"><use href="#i-share"/></svg></span>
+        <h3>6 位分享码，一人配好，全班导入</h3>
+        <p>只发送你选中的课表、对应时间方案和课程简称，不带作业、位置或其它设置。导入前先预览，可以选择合并或替换，不会清掉你自己的设置。分享码 7 天后失效。</p>
+        <div class="code" aria-hidden="true"><span>4</span><span>8</span><span>2</span><span>9</span><span>1</span><span>3</span></div>
+      </article>
+      <article class="card b s2 rv d1">
+        <span class="tag"><svg class="icon"><use href="#i-clock"/></svg></span>
+        <h3>实时上课状态</h3>
+        <p>早读、上课、课间、午休、放学，一眼看清，附下课倒计时和进度条。</p>
+      </article>
+      <article class="card b s3 rv">
+        <span class="tag"><svg class="icon"><use href="#i-book"/></svg></span>
+        <h3>作业甘特图</h3>
+        <p>按周看哪几天作业堆在一起。科目自动配色，支持批量添加。</p>
+        <div class="gantt" aria-hidden="true">
+          <div><i style="left:4%;width:38%;background:#2f7de1">数学 · 周三</i></div>
+          <div><i style="left:20%;width:46%;background:#1fb99a">英语 · 周四</i></div>
+          <div><i style="left:44%;width:44%;background:#8e6bd8">物理 · 周五</i></div>
+        </div>
+      </article>
+      <article class="card b s3 rv d1">
+        <span class="tag"><svg class="icon"><use href="#i-bell"/></svg></span>
+        <h3>明日课表与天气提醒</h3>
+        <p>晚上定时推送明天的课，需要时附带天气。通知栏可常驻今日课表。</p>
+        <div class="notif" aria-hidden="true">
+          <div><svg class="icon"><use href="#i-cal"/></svg><span><b>明天 周二 · 6 节课</b><small>语文 数学 英语 物理 …</small></span></div>
+          <div><svg class="icon"><use href="#i-sun"/></svg><span><b>明天 多云 14~22°C</b><small>早晚温差大，记得带外套</small></span></div>
+        </div>
+      </article>
+      <article class="card b s2 rv">
+        <span class="tag"><svg class="icon"><use href="#i-swap"/></svg></span>
+        <h3>临时调课</h3>
+        <p>长按课程，只改当天那一节，第二天自动恢复。</p>
+        <div class="swap" aria-hidden="true"><span>体育</span><svg class="icon"><use href="#i-swap"/></svg><span class="t">数学</span></div>
+      </article>
+      <article class="card b s2 rv d1">
+        <span class="tag"><svg class="icon"><use href="#i-pin"/></svg></span>
+        <h3>定位当前城市</h3>
+        <p>可选。只申请大致位置，坐标降精度，结果由你确认后才使用。</p>
+      </article>
+      <article class="card b s2 rv d2">
+        <span class="tag"><svg class="icon"><use href="#i-down"/></svg></span>
+        <h3>备份与恢复</h3>
+        <p>单文件导出导入，恢复前可预览，自选是否包含作业和设置。</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 外观 ================= -->
+<section id="look">
+  <div class="wrap look">
+    <div>
+      <span class="eyebrow rv">外观</span>
+      <h2 class="rv d1">你的课表，<br>你的颜色。</h2>
+      <p class="sec-lead rv d2">Material 3 配色，12 种预设加自定义。深色、纯黑和可调强度的玻璃质感都能自己定。下面的颜色和滑块，网页上就能试。</p>
+      <div class="swatches rv" id="swatches" role="group" aria-label="主题色"></div>
+      <div class="ctl rv d1">
+        <div><label for="glass">玻璃强度 <span id="gv">60%</span></label><input id="glass" type="range" min="0" max="100" value="60"></div>
+      </div>
+    </div>
+    <div class="preview rv d1" aria-hidden="true">
+      <i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i>
+      <div class="gl"><small>上课中</small><h4>第 3 节 · 数学</h4><div class="pb"><i></i></div></div>
+      <div class="gl"><small>明天预览</small><h4>语文 · 英语 · 物理 · 体育</h4></div>
+      <div class="gl" style="margin-bottom:0"><small>临近截止</small><h4>物理作业 · 周五</h4></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 隐私 ================= -->
+<section id="privacy" style="padding-top:24px">
+  <div class="wrap">
+    <span class="eyebrow rv">隐私</span>
+    <h2 class="rv d1">课表只在你手机里。</h2>
+    <div class="priv">
+      <div class="card rv"><span class="tag"><svg class="icon"><use href="#i-lock"/></svg></span><h3>没有账号</h3><p>不注册、不登录，也没有应用自己的用户后台。课表、作业、设置都存在本机。</p></div>
+      <div class="card rv d1"><span class="tag"><svg class="icon"><use href="#i-share"/></svg></span><h3>联网只做四件事</h3><p>获取天气、使用分享码、检查更新，以及你主动点「定位当前城市」时识别城市。</p></div>
+      <div class="card rv d2"><span class="tag"><svg class="icon"><use href="#i-pin"/></svg></span><h3>位置可选且模糊</h3><p>只申请大致位置，不做后台定位，也不用 GPS。不想用，手动选城市就行。</p></div>
+    </div>
+    <p class="fine rv">首次使用需阅读并同意 <a href="disclaimer.html">免责条款</a> 与 <a href="notice.html">用户须知</a>。智能课表是个人维护的工具，不是学校教务系统。</p>
+  </div>
+</section>
+
+<!-- ================= 下载 ================= -->
+<section id="download" style="padding-top:24px">
+  <div class="wrap">
+    <div class="card dl rv">
+      <span class="eyebrow">下载</span>
+      <h2>现在就装上。</h2>
+      <p class="sec-lead">从 GitHub Release 下载，应用内更新也默认走 GitHub。与旧版同一签名，直接覆盖安装，数据不丢。</p>
+      <div class="cta">
+        <a class="btn primary" id="dlBtn" href="https://github.com/enenhhh/smartschedule/releases/download/v5.2/smartschedule-5.2.apk"><svg class="icon"><use href="#i-down"/></svg><span id="dlText">下载最新版 APK</span></a>
+        <a class="btn ghost" href="https://github.com/enenhhh/smartschedule/releases" rel="noopener">全部版本</a>
+      </div>
+      <div class="dl-meta">
+        <span>版本 <b id="dlVer">5.2</b></span>
+        <span>大小 <b id="dlSize">约 2.6 MB</b></span>
+        <span>需要 <b>Android 8.0+</b></span>
+        <span id="dlDateWrap" hidden>发布于 <b id="dlDate"></b></span>
+      </div>
+      <div class="steps">
+        <div><b>1 · 下载</b>点击上方按钮，保存 APK。</div>
+        <div><b>2 · 允许安装</b>系统提示时，允许浏览器或文件管理器「安装未知应用」。</div>
+        <div><b>3 · 打开设置</b>填开学日期和作息，或输入同学的分享码。</div>
+      </div>
+      <p class="hash" id="dlHash" hidden></p>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <a class="brand" href="#top"><svg><use href="#i-mark"/></svg>智能课表</a>
+    <nav aria-label="页脚">
+      <a href="https://github.com/enenhhh/smartschedule" rel="noopener">GitHub</a>
+      <a href="https://github.com/enenhhh/smartschedule/releases" rel="noopener">版本发布</a>
+      <a href="https://github.com/enenhhh/smartschedule/issues" rel="noopener">反馈问题</a>
+      <a href="disclaimer.html">免责条款</a>
+      <a href="notice.html">用户须知</a>
+    </nav>
+    <span>© 2026 enenhhh</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var $=function(s,r){return (r||document).querySelector(s)};
+  var root=document.documentElement;
+  var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* 深浅色 */
+  function setIcon(){ $('#modeIcon use').setAttribute('href', root.dataset.mode==='dark'?'#i-sun':'#i-moon'); }
+  setIcon();
+  $('#modeBtn').addEventListener('click',function(){
+    var next=root.dataset.mode==='dark'?'light':'dark';
+    root.dataset.mode=next; try{localStorage.setItem('ss-mode',next)}catch(e){}
+    setIcon();
+    document.querySelector('meta[name=theme-color]').content = next==='dark'?'#08111f':'#f4f8ff';
+  });
+
+  /* 倒计时（演示用，循环） */
+  var left=18*60+24, total=40*60, cd=$('#cd'), bar=$('#cdbar');
+  function pad(n){return (n<10?'0':'')+n}
+  function tick(){
+    cd.textContent=pad(Math.floor(left/60))+':'+pad(left%60);
+    bar.style.width=((total-left)/total*100).toFixed(1)+'%';
+    left=left<=0?total:left-1;
+  }
+  tick(); if(!reduce) setInterval(tick,1000);
+
+  /* 单双周演示 */
+  var days=['周一','周二','周三','周四','周五'];
+  // 行 = 节次，列 = 星期；(行,列) 处单双周不同
+  var table=[
+    ['语文','数学','英语','政治','语文'],
+    ['数学','英语','物理','历史','数学'],
+    ['英语','语文','化学','数学','英语'],
+    ['物理','地理','数学','语文','物理']
+  ];
+  var diff={ '1,2':['物理','化学'], '2,0':['体育','美术'], '3,3':['生物','信息'], '0,4':['语文','班会'] };
+  var times=['08:00','08:50','09:50','10:40'];
+  var grid=$('#grid'), isOdd=true;
+  function build(flip){
+    var h='<div></div>'+days.map(function(d){return '<div class="h">'+d+'</div>'}).join('');
+    for(var r=0;r<4;r++){
+      h+='<div class="p">'+times[r]+'</div>';
+      for(var c=0;c<5;c++){
+        var k=r+','+c, d=diff[k], t=table[r][c], cls='cell';
+        if(d){ t=isOdd?d[0]:d[1]; cls+=' diff'+(flip?' flip':''); }
+        h+='<div class="'+cls+'" role="cell">'+t+'</div>';
+      }
+    }
+    grid.innerHTML=h;
+  }
+  function setWeek(o){
+    isOdd=o; build(true);
+    $('#wOdd').setAttribute('aria-pressed',o); $('#wEven').setAttribute('aria-pressed',!o);
+    $('#wNote').textContent=o?'当前显示：单周课表':'当前显示：双周课表';
+  }
+  $('#wOdd').addEventListener('click',function(){setWeek(true)});
+  $('#wEven').addEventListener('click',function(){setWeek(false)});
+  build(false);
+  if(!reduce){ var auto=setInterval(function(){setWeek(!isOdd)},3600);
+    ['wOdd','wEven'].forEach(function(id){$('#'+id).addEventListener('click',function(){clearInterval(auto)})}); }
+
+  /* 主题色 */
+  var presets=[['湛蓝','#006bdf'],['天空','#0288d1'],['青碧','#00897b'],['薄荷','#26a69a'],['翠绿','#43a047'],['青柠','#9e9d24'],['琥珀','#ffb300'],['暖橙','#f57c00'],['珊瑚','#ff7043'],['玫瑰','#e91e63'],['紫罗兰','#8e24aa'],['葡萄','#5e35b1']];
+  var sw=$('#swatches'), cur=(function(){try{return localStorage.getItem('ss-accent')}catch(e){return null}})()||'#006bdf';
+  presets.forEach(function(p){
+    var b=document.createElement('button'); b.type='button'; b.className='sw'; b.style.background=p[1];
+    b.setAttribute('aria-label',p[0]); b.title=p[0]; b.setAttribute('aria-pressed',p[1]===cur.toLowerCase());
+    b.addEventListener('click',function(){
+      root.style.setProperty('--accent',p[1]); try{localStorage.setItem('ss-accent',p[1])}catch(e){}
+      sw.querySelectorAll('.sw').forEach(function(x){x.setAttribute('aria-pressed',x===b)});
+    });
+    sw.appendChild(b);
+  });
+  var gl=$('#glass'), gv=$('#gv');
+  gl.addEventListener('input',function(){ root.style.setProperty('--g',gl.value/100); gv.textContent=gl.value+'%'; });
+
+  /* 滚动显现 */
+  var items=document.querySelectorAll('.rv');
+  if('IntersectionObserver' in window && !reduce){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12,rootMargin:'0px 0px -6% 0px'});
+    items.forEach(function(el){io.observe(el)});
+  } else items.forEach(function(el){el.classList.add('in')});
+
+  /* 下载信息：取 GitHub 最新 Release，失败则保留静态默认值 */
+  fetch('https://api.github.com/repos/enenhhh/smartschedule/releases/latest',{headers:{Accept:'application/vnd.github+json'}})
+    .then(function(r){if(!r.ok)throw 0;return r.json()})
+    .then(function(rel){
+      var apk=(rel.assets||[]).filter(function(a){return /\.apk$/i.test(a.name)})[0];
+      if(!apk) return;
+      $('#dlBtn').href=apk.browser_download_url;
+      $('#dlText').textContent='下载 '+rel.tag_name+' APK';
+      $('#dlVer').textContent=String(rel.tag_name).replace(/^v/,'');
+      $('#dlSize').textContent=(apk.size/1e6).toFixed(2)+' MB';
+      if(rel.published_at){ $('#dlDate').textContent=new Date(rel.published_at).toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'}); $('#dlDateWrap').hidden=false; }
+      if(apk.digest && /^sha256:/.test(apk.digest)){ var h=$('#dlHash'); h.textContent='SHA-256  '+apk.digest.slice(7); h.hidden=false; }
+    }).catch(function(){});
+})();
+</script>
+</body>
+</html>
