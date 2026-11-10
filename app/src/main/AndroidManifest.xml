@@ -14,6 +14,18 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <!-- AI 快速导入：判断这几个 AI 助手是否已安装，装了直接打开，没装打开网页版（Android 11+ 的包可见性） -->
+    <queries>
+        <package android:name="com.deepseek.chat" />
+        <package android:name="com.larus.nova" />
+        <package android:name="com.moonshot.kimichat" />
+        <package android:name="com.tencent.hunyuan.app.chat" />
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
+
     <application
         android:name=".App"
         android:allowBackup="true"

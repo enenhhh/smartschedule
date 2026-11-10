@@ -19,6 +19,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.FolderOpen
@@ -50,6 +51,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.enenhhh.smartschedule.data.ScheduleManager
+import com.enenhhh.smartschedule.ui.app.LocalNavigator
 import com.enenhhh.smartschedule.ui.app.LocalScheduleManager
 import com.enenhhh.smartschedule.ui.app.LocalSnackbar
 import com.enenhhh.smartschedule.ui.components.ConfirmDialog
@@ -62,6 +64,7 @@ import com.enenhhh.smartschedule.ui.components.SectionTitle
 import com.enenhhh.smartschedule.ui.components.SettingRow
 import com.enenhhh.smartschedule.ui.components.SettingSwitchRow
 import com.enenhhh.smartschedule.ui.components.SubPage
+import com.enenhhh.smartschedule.ui.nav.Route
 import com.enenhhh.smartschedule.util.BackupHelper
 import com.enenhhh.smartschedule.util.ShareCodeHelper
 import kotlinx.coroutines.Dispatchers
@@ -73,6 +76,7 @@ fun DataScreen() {
     val context = LocalContext.current
     val manager = LocalScheduleManager.current
     val snackbar = LocalSnackbar.current
+    val nav = LocalNavigator.current
     val scope = rememberCoroutineScope()
     val version = ScheduleManager.version
     val timetables = remember(version) { manager.getTimetables() }
@@ -130,6 +134,23 @@ fun DataScreen() {
                 .padding(padding),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            SectionTitle("AI 快速导入 · 拍照识别")
+            GlassGroup {
+                SettingRow(
+                    title = "AI 拍照导入课表",
+                    subtitle = "复制提示词，连同课表照片发给 DeepSeek 等 AI 助手，粘贴回复即可",
+                    icon = Icons.Rounded.AutoAwesome,
+                    onClick = { nav.push(Route.AiImport("timetable")) }
+                )
+                RowDivider()
+                SettingRow(
+                    title = "AI 拍照导入作业",
+                    subtitle = "黑板照片、作业群截图都可以",
+                    icon = Icons.Rounded.AutoAwesome,
+                    onClick = { nav.push(Route.AiImport("homework")) }
+                )
+            }
+
             SectionTitle("分享码 · 把课表传给同学")
             GlassGroup {
                 if (timetables.size > 1) {
