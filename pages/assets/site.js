@@ -243,6 +243,106 @@
     go(0); [s1, s2, s3][0](0);
   }
 
+  /* ================= AI 导入：四步演示（与 App 里的引导动画同一套分镜） ================= */
+  {
+    const scr = q('#aiDemo'), steps = qa('#aiSteps li');
+    const SCENE = 3.2, LOOP = SCENE * 4;
+    const NAMES = ['数学', '语文', '英语', '物理', '化学', '历史', '体育', '道德与法治'];
+    const cellName = (r, c) => NAMES[(r * 3 + c * 2) % NAMES.length];
+    const lines = (n, ws) => Array.from({ length: n }, (_, i) => `<div class="ln" style="width:${ws[i % ws.length]}%"></div>`).join('');
+    const mini = () => `<div style="width:130px;height:96px;background:#f4f1ea;padding:7px;display:grid;grid-template-columns:repeat(5,1fr);gap:3px">` +
+      Array.from({ length: 20 }, (_, k) => `<i style="display:block;border-radius:3px;background:${courseColor(cellName(k / 5 | 0, k % 5))}"></i>`).join('') + '</div>';
+    const ui = document.createElement('div'); ui.className = 'aid'; ui.setAttribute('aria-hidden', 'true');
+    ui.innerHTML = `
+      <div class="scene" data-s="0">
+        <div class="hdr"><i style="background:#00668c"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M10 3l1.8 5.2L17 10l-5.2 1.8L10 17l-1.8-5.2L3 10l5.2-1.8zM18 13l.9 2.1L21 16l-2.1.9L18 19l-.9-2.1L15 16l2.1-.9z" fill="#fff"/></svg></i>AI 快速导入</div>
+        <div class="card" style="top:96px"><div style="font-size:12px;font-weight:600;color:#00668c">提示词</div>${lines(8, [96, 82, 90, 64, 88, 72, 93, 55])}</div>
+        <div class="abtn" data-b="copy" style="top:300px">复制提示词</div>
+        <div class="toast" data-t>提示词已复制</div>
+      </div>
+      <div class="scene" data-s="1">
+        <div class="hdr"><i style="background:#4d6bfe"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M10 3l1.8 5.2L17 10l-5.2 1.8L10 17l-1.8-5.2L3 10l5.2-1.8zM18 13l.9 2.1L21 16l-2.1.9L18 19l-.9-2.1L15 16l2.1-.9z" fill="#fff"/></svg></i>AI 助手</div>
+        <div class="bub photo" data-u="0" style="top:100px">${mini()}</div>
+        <div class="bub" data-u="1" style="top:216px;width:180px">${lines(5, [95, 80, 90, 60, 75])}</div>
+        <div class="input"><span data-ph>粘贴提示词…</span><b></b></div>
+      </div>
+      <div class="scene" data-s="2">
+        <div class="hdr"><i style="background:#4d6bfe"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M10 3l1.8 5.2L17 10l-5.2 1.8L10 17l-1.8-5.2L3 10l5.2-1.8zM18 13l.9 2.1L21 16l-2.1.9L18 19l-.9-2.1L15 16l2.1-.9z" fill="#fff"/></svg></i>AI 助手</div>
+        <div class="bub on" style="top:100px;width:110px;height:34px;opacity:.4"></div>
+        <div class="code" data-c><div class="top">json<span class="cp" data-cp>复制</span></div>` +
+      [[40, '#e6e6e6'], [86, '#9fcaff'], [70, '#9fe1cb'], [92, '#f2c38b'], [76, '#9fe1cb'], [62, '#9fcaff'], [84, '#f2c38b'], [30, '#e6e6e6']]
+        .map(([w, c]) => `<div class="cl" data-w="${w}" style="background:${c}"></div>`).join('') + `</div>
+      </div>
+      <div class="scene" data-s="3">
+        <div class="hdr"><i style="background:#00668c"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M10 3l1.8 5.2L17 10l-5.2 1.8L10 17l-1.8-5.2L3 10l5.2-1.8zM18 13l.9 2.1L21 16l-2.1.9L18 19l-.9-2.1L15 16l2.1-.9z" fill="#fff"/></svg></i>AI 快速导入</div>
+        <div class="field" data-f>粘贴 AI 的回复</div>
+        <div class="grid">${Array.from({ length: 30 }, (_, k) => { const n = cellName(k / 5 | 0, k % 5); return `<i style="background:${courseColor(n)}">${FULL[n[0]] ? n[0] : n.slice(0, 2)}</i>`; }).join('')}</div>
+        <div class="abtn" data-b="imp" style="top:440px">导入</div>
+      </div>
+      <div class="finger"></div>`;
+    scr.appendChild(ui);
+    const fitAid = () => { ui.style.transform = `scale(${scr.clientWidth / 300})`; };
+    fitAid(); new ResizeObserver(fitAid).observe(scr);
+    const sc = [...ui.querySelectorAll('.scene')];
+    const copyBtn = ui.querySelector('[data-b=copy]'), impBtn = ui.querySelector('[data-b=imp]'), toast = ui.querySelector('[data-t]');
+    const ubs = [...ui.querySelectorAll('[data-u]')], ph = ui.querySelector('[data-ph]');
+    const code = ui.querySelector('[data-c]'), cls = [...ui.querySelectorAll('.cl')], cp = ui.querySelector('[data-cp]');
+    const field = ui.querySelector('[data-f]'), cells = [...ui.querySelectorAll('.grid i')], finger = ui.querySelector('.finger');
+    const CHK = '<svg width="14" height="14" viewBox="0 0 24 24" style="vertical-align:-2px;margin-right:4px"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z" fill="#fff"/></svg>';
+    const setHTMLc = (el, v) => { if (el._h !== v) { el.innerHTML = v; el._h = v; } };
+    const press = (t, at) => { const d = t - at; return d < -.12 || d > .22 ? 0 : clamp(1 - Math.abs((d - .02) / .14)); };
+    const between = (t, a, b) => t >= a && t < b;
+    let t0 = null, offset = 0, lastScene = -1;
+    function setText(el, v) { if (el.textContent !== v) el.textContent = v; }
+    function draw(t) {
+      const scene = Math.min(3, Math.floor(t / SCENE)), lt = t - scene * SCENE;
+      if (scene !== lastScene) { sc.forEach((e, i) => e.classList.toggle('on', i === scene)); lastScene = scene; }
+      steps.forEach((li, i) => {
+        li.classList.toggle('on', i === scene); li.classList.toggle('done', i < scene);
+        li.querySelector('.bar i').style.width = (i === scene ? clamp(lt / SCENE) * 100 : 0) + '%';
+      });
+      let f = null;                                     // 触点 [x, y, 按下]
+      if (scene === 0) {
+        const done = lt > 1.25;
+        setHTMLc(copyBtn, done ? CHK + '已复制' : '复制提示词');
+        copyBtn.style.background = done ? '#2bb894' : '#00668c';
+        copyBtn.style.transform = `scale(${1 - .05 * press(lt, 1.05)})`;
+        toast.classList.toggle('on', between(lt, 1.35, 2.8));
+        if (between(lt, .4, 1.8)) f = [150, 323, press(lt, 1.05)];
+      } else if (scene === 1) {
+        ubs[0].classList.toggle('on', lt > .3); ubs[1].classList.toggle('on', lt > 1.3);
+        setText(ph, lt < 1.15 ? '粘贴提示词…' : '');
+        if (between(lt, .7, 1.7)) f = [262, 617, press(lt, 1.15)];
+      } else if (scene === 2) {
+        code.classList.toggle('on', lt > .15);
+        cls.forEach((c, i) => { c.style.width = (lt > .4 + i * .13 ? c.dataset.w : 0) + '%'; });
+        const done = lt > 2.0;
+        setHTMLc(cp, done ? CHK + '已复制' : '复制'); cp.style.background = done ? '#2bb894' : 'rgba(255,255,255,.14)';
+        cp.style.transform = `scale(${1 - .1 * press(lt, 1.85)})`;
+        if (between(lt, 1.35, 2.6)) f = [250, 166, press(lt, 1.85)];
+      } else {
+        const filled = lt > .55;
+        field.classList.toggle('on', filled);
+        setText(field, filled ? '{ "type": "smartschedule.timetable", "days": [ …' : '粘贴 AI 的回复');
+        cells.forEach((c, k) => c.classList.toggle('on', lt > .8 + ((k / 5 | 0) + k % 5) * .07));
+        const done = lt > 2.05;
+        setHTMLc(impBtn, done ? CHK + '导入完成' : '导入'); impBtn.style.background = done ? '#2bb894' : '#00668c';
+        impBtn.style.transform = `scale(${1 - .05 * press(lt, 1.9)})`;
+        if (between(lt, .1, 2.5)) f = lt < 1.2 ? [150, 118, press(lt, .45)] : [150, 463, press(lt, 1.9)];
+      }
+      finger.style.opacity = f ? 1 : 0;
+      if (f) finger.style.transform = `translate(${f[0]}px, ${f[1]}px) scale(${1 - .18 * f[2]})`;
+    }
+    steps.forEach((li, i) => li.addEventListener('click', () => { offset = i * SCENE - ((nowS() - (t0 ?? nowS())) % LOOP) + offset; if (reduce) draw(i * SCENE + SCENE - .01); }));
+    const p = player(scr, t => {
+      if (reduce) return;
+      if (t0 === null) t0 = t;
+      draw((((t - t0 + offset) % LOOP) + LOOP) % LOOP);
+    });
+    p.onShow = t => { if (t0 === null) t0 = t; };
+    draw(reduce ? LOOP - .01 : 0);
+  }
+
   /* ================= 分享码：生成 → 复制 → 同学导入 ================= */
   {
     const me = BackupScreen({ withDialog: true }), mate = BackupScreen({ withImport: true });

@@ -35,7 +35,7 @@
   <div class="topnav-in glassy">
     <a class="brand" href="#top" aria-label="智能课表 首页"><span class="mark" data-icon="36"></span>智能课表</a>
     <nav class="navlinks" aria-label="主导航">
-      <a href="#today">功能</a><a href="#guide">配置教程</a><a href="#share">分享码</a><a href="#privacy">隐私</a><a href="#download">下载</a>
+      <a href="#today">功能</a><a href="#ai">AI 导入</a><a href="#guide">配置教程</a><a href="#share">分享码</a><a href="#privacy">隐私</a><a href="#download">下载</a>
     </nav>
     <a class="gh" href="https://github.com/enenhhh/smartschedule" rel="noopener" aria-label="GitHub 源码"><svg class="ico"><use href="#i-gh"/></svg></a>
     <a class="btn pri sm" href="#download">下载</a>
@@ -81,6 +81,35 @@
   </div>
 </section>
 
+<!-- ================= AI 导入 ================= -->
+<section class="block" id="ai" style="padding-top:40px">
+  <div class="wrap">
+    <div class="center">
+      <div class="eyebrow c rv">AI 快速导入 <span class="newtag">下个版本上线</span></div>
+      <h2 class="title" data-split>史上最<b class="hl">简单</b>的配置方法。</h2>
+      <p class="lead rv">拍一张课表，交给 DeepSeek 这类 AI 助手，复制回来粘贴，整张课表就填好了。作业也一样：拍黑板、截作业群都行。</p>
+    </div>
+    <div class="ai">
+      <div class="stage ai-stage rv">
+        <div class="phone"><div class="scr" id="aiDemo" aria-label="AI 导入演示动画"></div></div>
+      </div>
+      <div>
+        <ol class="ai-steps" id="aiSteps">
+          <li class="rv"><span class="n">1</span><div><b>复制提示词</b><span>在智能课表里点一下。提示词就是规则，告诉 AI 该怎么输出。</span><span class="bar"><i></i></span></div></li>
+          <li class="rv" style="--d:80ms"><span class="n">2</span><div><b>拍照发给 AI</b><span>打开 DeepSeek、豆包、Kimi 或元宝，上传照片，粘贴提示词发送。</span><span class="bar"><i></i></span></div></li>
+          <li class="rv" style="--d:160ms"><span class="n">3</span><div><b>复制 AI 的回复</b><span>AI 回一段代码，点「复制」。</span><span class="bar"><i></i></span></div></li>
+          <li class="rv" style="--d:240ms"><span class="n">4</span><div><b>粘贴，确认</b><span>回到智能课表粘贴，先预览，没问题再导入；导完还能撤销。</span><span class="bar"><i></i></span></div></li>
+        </ol>
+        <ul class="ticks rv">
+          <li>不用申请 API，不用填密钥，不用选模型</li>
+          <li>单双周不同的课、晨读、上下课时间都能识别</li>
+          <li>作业里的「明天」「周五前」会自动换算成日期</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ================= 配置教程 ================= -->
 <section class="block" id="guide" style="padding-top:40px">
   <div class="wrap">
@@ -102,7 +131,7 @@
             <span class="num">03</span><span class="sh">点格填课</span>
             <span class="sp">点一下格子，选一门课，自动跳到下一节。单双周不同的天分开填。</span><span class="bar"><i></i></span></button>
         </div>
-        <p class="guide-note rv">不想自己填？让配好的同学生成 <a href="#share">6 位分享码</a>，输入后整张课表直接导入。</p>
+        <p class="guide-note rv">不想自己填？<a href="#ai">拍张照交给 AI</a>，或者让配好的同学生成 <a href="#share">6 位分享码</a>。</p>
       </div>
       <div class="stage guide-stage rv" id="guidePanel" role="tabpanel">
         <div class="phone"><div class="scr live" id="scrGuide" aria-label="配置演示，可以点击"></div></div>
