@@ -134,6 +134,50 @@ button{font:inherit;color:inherit;cursor:pointer}
 .redo{border:0;background:none;color:var(--blue);font-weight:600;font-size:14px;padding:8px 12px;border-radius:999px}
 .redo:hover{background:rgba(0,107,223,.08)}
 
+/* AI 导入 */
+.newtag{margin-left:6px;padding:3px 10px;border-radius:999px;background:rgba(43,184,148,.14);color:#12795f;font-size:12px;letter-spacing:.04em}
+.ai{display:grid;grid-template-columns:auto 1fr;gap:72px;align-items:center;margin-top:64px;justify-content:center}
+.ai-stage .phone{--w:clamp(250px,22vw,310px)}
+.ai-steps{margin:0;padding:0;list-style:none;display:grid;gap:10px;max-width:520px}
+.ai-steps li{display:flex;gap:16px;padding:18px 22px;border-radius:26px;border:1.5px solid transparent;transition:background .35s,border-color .35s,box-shadow .35s;cursor:pointer}
+.ai-steps li.on{background:var(--glass);border-color:var(--glass-line);box-shadow:var(--shadow)}
+.ai-steps .n{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:var(--blue);background:rgba(0,107,223,.1);transition:.3s}
+.ai-steps li.on .n,.ai-steps li.done .n{background:var(--blue);color:#fff}
+.ai-steps div{flex:1}
+.ai-steps b{display:block;font-size:20px;font-weight:620}
+.ai-steps span:not(.n):not(.bar){display:block;margin-top:4px;font-size:15px;color:var(--gray);line-height:1.6}
+.ai-steps .bar{display:block;height:3px;border-radius:3px;background:rgba(0,107,223,.1);margin-top:10px;overflow:hidden;opacity:0;transition:opacity .3s}
+.ai-steps li.on .bar{opacity:1}
+.ai-steps .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--mint))}
+/* 演示里的小界面（以 300px 宽为基准，按屏幕宽度缩放） */
+.aid{position:absolute;left:0;top:0;width:300px;height:663px;transform-origin:0 0;font-family:var(--font);color:#1f1f1f;overflow:hidden}
+.aid .scene{position:absolute;inset:0;opacity:0;transition:opacity .35s}
+.aid .scene.on{opacity:1}
+.aid .hdr{position:absolute;left:18px;top:52px;display:flex;align-items:center;gap:8px;font-size:15px;font-weight:620}
+.aid .hdr i{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:#fff;font-style:normal;font-size:13px}
+.aid .card{position:absolute;left:16px;right:16px;border-radius:20px;background:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.9);box-shadow:0 10px 24px -16px rgba(30,60,110,.4);padding:14px}
+.aid .ln{height:8px;border-radius:8px;background:rgba(60,64,67,.13);margin:8px 0}
+.aid .abtn{position:absolute;left:16px;right:16px;height:46px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;color:#fff;background:#00668c;transition:background .3s,transform .15s}
+.aid .toast{position:absolute;left:50%;bottom:40px;transform:translate(-50%,20px);padding:10px 16px;border-radius:12px;background:#2e3135;color:#fff;font-size:13px;opacity:0;transition:.35s;white-space:nowrap}
+.aid .toast.on{opacity:1;transform:translate(-50%,0)}
+.aid .bub{position:absolute;right:16px;border-radius:18px 18px 6px 18px;background:#4d6bfe;padding:12px;opacity:0;transform:translateY(24px);transition:.45s cubic-bezier(.16,1,.3,1)}
+.aid .bub.on{opacity:1;transform:none}
+.aid .bub .ln{background:rgba(255,255,255,.6)}
+.aid .photo{right:16px;padding:0;background:none;border-radius:14px;overflow:hidden;box-shadow:0 10px 24px -14px rgba(0,0,0,.4)}
+.aid .input{position:absolute;left:14px;right:14px;bottom:24px;height:44px;border-radius:999px;background:rgba(255,255,255,.8);border:1px solid rgba(0,0,0,.06);display:flex;align-items:center;padding:0 8px 0 16px;gap:8px;font-size:13px;color:#80868b}
+.aid .input b{margin-left:auto;width:30px;height:30px;border-radius:50%;background:#4d6bfe}
+.aid .code{position:absolute;left:16px;right:16px;top:150px;border-radius:16px;background:#1e2430;padding:12px 14px;opacity:0;transition:opacity .4s}
+.aid .code.on{opacity:1}
+.aid .code .top{display:flex;align-items:center;font:12px ui-monospace,Menlo,monospace;color:rgba(255,255,255,.5)}
+.aid .code .cp{margin-left:auto;padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font:600 12px var(--font);transition:background .3s,transform .15s}
+.aid .code .cl{height:7px;border-radius:7px;margin:9px 0;width:0;transition:width .35s ease-out}
+.aid .field{position:absolute;left:16px;right:16px;top:96px;height:44px;border-radius:12px;border:1.5px solid #71787e;display:flex;align-items:center;padding:0 12px;font-size:13px;color:#80868b;transition:border-color .3s;white-space:nowrap;overflow:hidden}
+.aid .field.on{border-color:#00668c;color:#1f1f1f;font-family:ui-monospace,Menlo,monospace;font-size:11px}
+.aid .grid{position:absolute;left:16px;right:16px;top:156px;display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.aid .grid i{height:40px;border-radius:9px;display:grid;place-items:center;font-style:normal;font-size:13px;color:#2d3340;opacity:0;transform:scale(.5);transition:opacity .3s,transform .4s cubic-bezier(.34,1.56,.64,1)}
+.aid .grid i.on{opacity:1;transform:none}
+.aid .finger{position:absolute;left:0;top:0;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:rgba(255,255,255,.82);border:2px solid rgba(255,255,255,.95);box-shadow:0 8px 20px rgba(10,30,60,.3);opacity:0;transition:opacity .3s;z-index:9;pointer-events:none}
+
 /* 分享码：两台手机 */
 .duo{display:flex;gap:28px;align-items:flex-start;justify-content:center}
 .duo .phone{--w:clamp(220px,19vw,270px)}
@@ -206,7 +250,8 @@ button{font:inherit;color:inherit;cursor:pointer}
   .hero-stage .phone.back{display:none}
   .hero-stage .badge{left:50%;bottom:84px;transform:translateX(-50%)}
   .hero-stage .hint{left:50%;transform:translateX(-50%)}
-  .split,.guide{grid-template-columns:1fr;gap:44px}
+  .split,.guide,.ai{grid-template-columns:1fr;gap:44px}
+  .ai{justify-items:center}
   .split.rev>.copy{order:0}
   .guide-stage{order:-1}
   .pair,.trio{grid-template-columns:1fr}
