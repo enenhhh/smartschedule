@@ -183,5 +183,6 @@ private fun RouteContent(route: Route) {
         Route.Permissions -> PermissionsScreen()
         Route.About -> AboutScreen()
         Route.Onboarding -> OnboardingScreen()
+        is Route.AiImport -> com.enenhhh.smartschedule.ui.aiimport.AiImportScreen(route.mode)
     }
 }

@@ -118,7 +118,7 @@ fun OnboardingScreen() {
     var startPicker by remember { mutableStateOf(false) }
 
     // 课表来源
-    var choice by rememberSaveable { mutableStateOf("manual") } // manual / code / later
+    var choice by rememberSaveable { mutableStateOf("ai") } // ai / manual / code / later
     var code by rememberSaveable { mutableStateOf("") }
     var importing by remember { mutableStateOf(false) }
     var imported by remember { mutableStateOf(false) }
@@ -147,6 +147,11 @@ fun OnboardingScreen() {
             val target = existing ?: manager.createTimetable("我的课表", plan.name)
             nav.resetTo(Route.Today)
             nav.push(Route.TimetableEditor(target.id))
+        } else if (choice == "ai") {
+            // 先用刚配好的作息建一张空课表，AI 导入时会更新它
+            if (existing == null) manager.createTimetable("我的课表", plan.name)
+            nav.resetTo(Route.Timetable)
+            nav.push(Route.AiImport("timetable"))
         } else {
             nav.resetTo(Route.Today)
         }
@@ -256,8 +261,9 @@ fun OnboardingScreen() {
                         3 -> StepCard(
                             icon = Icons.Rounded.CalendarViewWeek,
                             title = "课表从哪来？",
-                            desc = "可以自己点格子填，也可以输入同学的分享码一键导入。"
+                            desc = "可以自己点格子填，可以拍照让 AI 识别，也可以输入同学的分享码一键导入。"
                         ) {
+                            ChoiceRow("用 AI 拍照导入（推荐）", "拍一张课表交给 DeepSeek 等 AI 助手，不用配置 API", choice == "ai") { choice = "ai" }
                             ChoiceRow("自己填写", "完成引导后直接进入编辑器", choice == "manual") { choice = "manual" }
                             ChoiceRow("用分享码导入", "同学在 App 里生成的 6 位数字", choice == "code") { choice = "code" }
                             ChoiceRow("稍后再说", "先看看界面", choice == "later") { choice = "later" }

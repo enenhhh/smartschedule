@@ -30,6 +30,8 @@ sealed class Route(val key: String) {
     data object Permissions : Route("permissions")
     data object About : Route("about")
     data object Onboarding : Route("onboarding")
+    /** AI 快速导入；[mode] = "timetable" / "homework" */
+    data class AiImport(val mode: String) : Route("ai_import:$mode")
 
     val isTopLevel: Boolean get() = this is Today || this is Timetable || this is Homework || this is Settings
 
@@ -54,6 +56,7 @@ sealed class Route(val key: String) {
             key == "permissions" -> Permissions
             key == "about" -> About
             key == "onboarding" -> Onboarding
+            key.startsWith("ai_import:") -> AiImport(key.removePrefix("ai_import:"))
             else -> Today
         }
     }

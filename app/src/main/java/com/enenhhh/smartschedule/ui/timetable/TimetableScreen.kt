@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.CalendarViewWeek
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Weekend
@@ -102,7 +103,11 @@ fun TimetableScreen() {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                FilledTonalIconButton(onClick = { nav.push(Route.AiImport("timetable")) }) {
+                    Icon(Icons.Rounded.AutoAwesome, contentDescription = "AI 拍照导入课表")
+                }
                 if (timetable != null) {
+                    Spacer(Modifier.width(6.dp))
                     FilledTonalIconButton(
                         onClick = {
                             showWeekend = !showWeekend
@@ -135,6 +140,16 @@ fun TimetableScreen() {
                             val tt = manager.createTimetable("我的课表", null)
                             nav.push(Route.TimetableEditor(tt.id))
                         }
+                    )
+                }
+            }
+            item {
+                Box(Modifier.fillMaxWidth().glassCard()) {
+                    SettingRow(
+                        title = "用 AI 拍照导入",
+                        subtitle = "拍一张课表，交给 DeepSeek 等 AI 助手识别，粘贴回来就填好了",
+                        icon = Icons.Rounded.AutoAwesome,
+                        onClick = { nav.push(Route.AiImport("timetable")) }
                     )
                 }
             }

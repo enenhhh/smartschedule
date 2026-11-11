@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Checklist
 import androidx.compose.material.icons.rounded.Delete
@@ -56,6 +57,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.enenhhh.smartschedule.data.Homework
 import com.enenhhh.smartschedule.data.HomeworkRepository
+import com.enenhhh.smartschedule.ui.app.LocalNavigator
 import com.enenhhh.smartschedule.ui.app.LocalScheduleManager
 import com.enenhhh.smartschedule.ui.app.LocalSnackbar
 import com.enenhhh.smartschedule.ui.components.ConfirmDialog
@@ -66,6 +68,7 @@ import com.enenhhh.smartschedule.ui.components.GlassSheet
 import com.enenhhh.smartschedule.ui.components.PillTabs
 import com.enenhhh.smartschedule.ui.components.courseColor
 import com.enenhhh.smartschedule.ui.glass.glassCard
+import com.enenhhh.smartschedule.ui.nav.Route
 import com.enenhhh.smartschedule.ui.today.topLevelContentPadding
 import com.enenhhh.smartschedule.util.DateUtils
 import kotlinx.coroutines.launch
@@ -79,6 +82,7 @@ fun HomeworkScreen() {
     val context = LocalContext.current
     val manager = LocalScheduleManager.current
     val snackbar = LocalSnackbar.current
+    val nav = LocalNavigator.current
     val scope = rememberCoroutineScope()
     val repo = remember { HomeworkRepository(context) }
     val version = HomeworkRepository.version
@@ -98,7 +102,8 @@ fun HomeworkScreen() {
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             item {
-                Column(Modifier.padding(horizontal = 4.dp)) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
                     Text("作业", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
                     Text(
                         when {
@@ -109,6 +114,12 @@ fun HomeworkScreen() {
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (overdue > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+                FilledTonalButton(onClick = { nav.push(Route.AiImport("homework")) }) {
+                    Icon(Icons.Rounded.AutoAwesome, null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("AI 导入")
+                }
                 }
             }
             item {
@@ -128,7 +139,7 @@ fun HomeworkScreen() {
                                 EmptyState(
                                     icon = Icons.Rounded.Checklist,
                                     title = "暂无作业",
-                                    description = "点右下角添加一项，设置截止日期后首页会提醒你。"
+                                    description = "点右下角添加一项，或者点右上角「AI 导入」，拍一张黑板、截一张作业群，交给 AI 整理。"
                                 )
                             }
                         }
