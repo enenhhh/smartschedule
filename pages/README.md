@@ -35,4 +35,4 @@ cd ../ghp && git rm -rq . && cp -r ../smartschedule/pages/. ./ && rm -rf tools R
 git add -A && git commit -m "site: 更新" && git push origin gh-pages
 ```
 
-下载区块在浏览器里请求 GitHub 最新 Release，自动显示版本、大小、发布日期和 SHA-256；请求失败时使用页面里写死的 5.2 下载链接。发新版后不用改这个页面，但静态默认链接（`#dlBtn`）建议顺手更新。
+下载区块在浏览器里请求 GitHub 最新 Release，自动显示版本、大小、发布日期和 SHA-256；请求失败时使用页面里写死的下载链接（当前为 5.3）。发新版后不用改这个页面，但静态默认链接（`#dlBtn`）建议顺手更新。
