@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>智能课表 · 再也无需记住单双周</title>
+<meta name="description" content="智能课表：为单双周轮换设计的 Android 课表。设好开学日期，每周自动切换；打开就知道现在上哪节课。三步配置，6 位分享码全班同步，常驻通知。安装包 2.5 MB，MIT 开源，无需账号。">
+<meta name="theme-color" content="#f8fafd">
+<meta property="og:title" content="智能课表 · 再也无需记住单双周">
+<meta property="og:description" content="为单双周轮换设计的 Android 课表。三步配置、6 位分享码、常驻通知。2.5 MB，MIT 开源。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://enenhhh.github.io/smartschedule/">
+<meta property="og:image" content="https://enenhhh.github.io/smartschedule/assets/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preload" href="assets/fonts/nsc.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/gsf.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/app.css">
+<link rel="stylesheet" href="assets/site.css">
+<script>document.documentElement.classList.add('js');window.TIMELINE={scenes:[]};</script>
+</head>
+<body>
+<a class="skip" href="#main">跳到正文</a>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v11M7 11l5 5 5-5M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="i-gh" viewBox="0 0 16 16"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8.5 10.5V8a3.5 3.5 0 017 0v2.5" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+<symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2.5 9a14 14 0 0119 0M5.5 12.5a9.5 9.5 0 0113 0M8.8 16a5 5 0 016.4 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="19.3" r="1.4" fill="currentColor"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.1 7-11.5A7 7 0 005 9.5C5 14.9 12 21 12 21z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="9.5" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+</defs></svg>
+<div class="bgfx" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b></div>
+
+<header class="topnav wrap">
+  <div class="topnav-in glassy">
+    <a class="brand" href="#top" aria-label="智能课表 首页"><span class="mark" data-icon="36"></span>智能课表</a>
+    <nav class="navlinks" aria-label="主导航">
+      <a href="#today">功能</a><a href="#ai">AI 导入</a><a href="#guide">配置教程</a><a href="#share">分享码</a><a href="#privacy">隐私</a><a href="#download">下载</a>
+    </nav>
+    <a class="gh" href="https://github.com/enenhhh/smartschedule" rel="noopener" aria-label="GitHub 源码"><svg class="ico"><use href="#i-gh"/></svg></a>
+    <a class="btn pri sm" href="#download">下载</a>
+  </div>
+</header>
+
+<main id="main">
+<!-- ================= 首屏：单双周 ================= -->
+<section class="wrap hero" id="top">
+  <div class="copy">
+    <div class="eyebrow rv">智能课表 <span id="heroVer">5.3</span> · Android</div>
+    <h1 class="title xl" data-split>再也无需记住<br><b class="hl">单双周</b>。</h1>
+    <p class="lead rv" style="--d:300ms">设好开学日期，每周自动切换。单双周不同的课，到了那一周自己换上。</p>
+    <div class="cta rv" style="--d:420ms">
+      <a class="btn pri" href="#download"><svg class="ico"><use href="#i-down"/></svg>下载 APK</a>
+      <a class="btn sec" href="#guide">看看怎么配置</a>
+    </div>
+    <ul class="facts rv" style="--d:540ms">
+      <li>安装包 2.5 MB</li><li>MIT 开源</li><li>无需账号</li><li>Android 8.0+</li>
+    </ul>
+  </div>
+  <div class="hero-stage rv" style="--d:200ms">
+    <div class="phone back" aria-hidden="true"><div class="scr"><img src="shots/06_semester.webp" alt="" width="640" height="1415" decoding="async"></div></div>
+    <div class="phone front"><div class="scr live" id="scrTimetable" role="button" tabindex="0" aria-label="课表演示：点一下翻到下一周"></div></div>
+    <div class="badge glassy" aria-live="polite"><span class="bi" data-svg="cal"></span><span><small>今天</small><b id="weekBadge">11月9日 · 第 11 周</b></span></div>
+    <span class="hint glassy">点一下手机，翻到下一周</span>
+  </div>
+</section>
+
+<!-- ================= 首页：实时状态 ================= -->
+<section class="block" id="today">
+  <div class="wrap split rev">
+    <div class="copy">
+      <div class="eyebrow rv">首页</div>
+      <h2 class="title" data-split>打开就知道，<br>现在上<b class="hl">哪节课</b>。</h2>
+      <p class="lead rv">下课倒计时，课间提醒下一节。晨读、上课、课间、午休、放学，一眼看清。长按某一节可以临时调课，只影响当天。</p>
+    </div>
+    <div class="stage today-stage rv">
+      <div class="phone"><div class="scr" id="scrToday" aria-label="首页演示"></div></div>
+      <div class="badge glassy" aria-hidden="true"><span class="bi" style="border-radius:50%" data-svg="clock"></span><b id="todayClock" style="font-size:26px">10:42</b></div>
+      <div class="scrub glassy"><label for="timeRange">拖动时间</label><input id="timeRange" type="range" min="470" max="1119" value="642" step="1"><output id="timeOut" for="timeRange">10:42</output></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= AI 导入 ================= -->
+<section class="block" id="ai" style="padding-top:40px">
+  <div class="wrap">
+    <div class="center">
+      <div class="eyebrow c rv">AI 快速导入 <span class="newtag">5.3 新功能</span></div>
+      <h2 class="title" data-split>史上最<b class="hl">简单</b>的配置方法。</h2>
+      <p class="lead rv">拍一张课表，交给 DeepSeek 这类 AI 助手，复制回来粘贴，整张课表就填好了。作业也一样：拍黑板、截作业群都行。</p>
+    </div>
+    <div class="ai">
+      <div class="stage ai-stage rv">
+        <div class="phone"><div class="scr" id="aiDemo" aria-label="AI 导入演示动画"></div></div>
+      </div>
+      <div>
+        <ol class="ai-steps" id="aiSteps">
+          <li class="rv"><span class="n">1</span><div><b>复制提示词</b><span>在智能课表里点一下。提示词就是规则，告诉 AI 该怎么输出。</span><span class="bar"><i></i></span></div></li>
+          <li class="rv" style="--d:80ms"><span class="n">2</span><div><b>拍照发给 AI</b><span>打开 DeepSeek、豆包、Kimi 或元宝，上传照片，粘贴提示词发送。</span><span class="bar"><i></i></span></div></li>
+          <li class="rv" style="--d:160ms"><span class="n">3</span><div><b>复制 AI 的回复</b><span>AI 回一段代码，点「复制」。</span><span class="bar"><i></i></span></div></li>
+          <li class="rv" style="--d:240ms"><span class="n">4</span><div><b>粘贴，确认</b><span>回到智能课表粘贴，先预览，没问题再导入；导完还能撤销。</span><span class="bar"><i></i></span></div></li>
+        </ol>
+        <ul class="ticks rv">
+          <li>不用申请 API，不用填密钥，不用选模型</li>
+          <li>单双周不同的课、晨读、上下课时间都能识别</li>
+          <li>作业里的「明天」「周五前」会自动换算成日期</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 配置教程 ================= -->
+<section class="block" id="guide" style="padding-top:40px">
+  <div class="wrap">
+    <div class="center">
+      <div class="eyebrow c rv">配置教程</div>
+      <h2 class="title" data-split>配置<b class="hl">简单</b>，方便易用。</h2>
+      <p class="lead rv">三步，配好一整个学期。演示放完后，手机里的界面可以直接点。</p>
+    </div>
+    <div class="guide">
+      <div>
+        <div class="steps" role="tablist" aria-label="配置步骤">
+          <button class="step rv" role="tab" aria-selected="true" aria-controls="guidePanel" data-step="0">
+            <span class="num">01</span><span class="sh">设定周次</span>
+            <span class="sp">告诉它现在是第几周，开学日期自动反推。也可以直接选开学日期。</span><span class="bar"><i></i></span></button>
+          <button class="step rv" role="tab" aria-selected="false" aria-controls="guidePanel" data-step="1" style="--d:80ms">
+            <span class="num">02</span><span class="sh">生成作息</span>
+            <span class="sp">拖一拖设好每节时长，一键生成全天上下课时间。课间、节数、午休也能调。</span><span class="bar"><i></i></span></button>
+          <button class="step rv" role="tab" aria-selected="false" aria-controls="guidePanel" data-step="2" style="--d:160ms">
+            <span class="num">03</span><span class="sh">点格填课</span>
+            <span class="sp">点一下格子，选一门课，自动跳到下一节。单双周不同的天分开填。</span><span class="bar"><i></i></span></button>
+        </div>
+        <p class="guide-note rv">不想自己填？<a href="#ai">拍张照交给 AI</a>，或者让配好的同学生成 <a href="#share">6 位分享码</a>。</p>
+      </div>
+      <div class="stage guide-stage rv" id="guidePanel" role="tabpanel">
+        <div class="phone"><div class="scr live" id="scrGuide" aria-label="配置演示，可以点击"></div></div>
+        <div style="display:flex;align-items:center;gap:6px"><span class="hint glassy" id="guideHint">看演示</span><button class="redo" id="guideRedo" type="button">重看演示</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 分享码 ================= -->
+<section class="block" id="share">
+  <div class="wrap split">
+    <div class="copy">
+      <div class="eyebrow rv">分享码</div>
+      <h2 class="title" data-split>一串数字，<br>全班<b class="hl">同步</b>。</h2>
+      <p class="lead rv">一人配好，生成 6 位分享码发到群里。同学导入前先预览，可以合并，也可以替换。</p>
+      <ul class="ticks rv">
+        <li>只上传课表、时间方案、课程简称和开学日期，约 1.6 KB</li>
+        <li>不带作业、位置或其它设置，7 天后自动失效</li>
+        <li>导入不会覆盖你自己的设置和作业</li>
+      </ul>
+    </div>
+    <div class="duo rv" aria-label="分享码演示">
+      <div><span class="cap glassy"><i></i>你的手机</span><div class="phone"><div class="scr" id="scrShareA"></div></div></div>
+      <div><span class="cap glassy"><i style="background:var(--mint)"></i>同学的手机</span><div class="phone"><div class="scr" id="scrShareB"></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 常驻通知 ================= -->
+<section class="block" id="notif">
+  <div class="wrap split rev">
+    <div class="copy">
+      <div class="eyebrow rv">通知栏</div>
+      <h2 class="title" data-split><b class="hl">常驻通知</b>，<br>无需打开 App。</h2>
+      <p class="lead rv">今天、明天的课和紧急作业，下拉通知栏就能看到。晚上还能定时推送明天的课，需要时附带天气。</p>
+    </div>
+    <div class="stage rv">
+      <div class="phone"><div class="scr" id="scrShade" aria-label="通知栏演示"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 一应俱全（真实截图） ================= -->
+<section class="block" id="more" style="padding-top:40px">
+  <div class="wrap">
+    <div class="center">
+      <div class="eyebrow c rv">更多</div>
+      <h2 class="title" data-split>作业、主题、备份，<b class="hl">一应俱全</b>。</h2>
+      <p class="lead rv">下面是应用的真实截图。</p>
+    </div>
+    <div class="shots">
+      <figure class="rv"><div class="phone"><div class="scr"><img src="shots/03_homework.webp" alt="作业页截图" width="640" height="1415" loading="lazy" decoding="async"></div></div>
+        <figcaption><b>作业</b><span>按周看哪几天作业堆在一起，科目自动配色</span></figcaption></figure>
+      <figure class="rv" style="--d:80ms"><div class="phone"><div class="scr"><img src="shots/12_addhomework.webp" alt="添加作业截图" width="640" height="1415" loading="lazy" decoding="async"></div></div>
+        <figcaption><b>添加作业</b><span>选科目、截止日期，支持批量添加</span></figcaption></figure>
+      <figure class="rv" style="--d:160ms"><div class="phone"><div class="scr"><img src="shots/01_today.webp" alt="首页截图" width="640" height="1415" loading="lazy" decoding="async"></div></div>
+        <figcaption><b>首页</b><span>今天的课、当前状态和明天预览</span></figcaption></figure>
+      <figure class="rv" style="--d:240ms"><div class="phone"><div class="scr"><img src="shots/07_appearance.webp" alt="外观设置截图" width="640" height="1415" loading="lazy" decoding="async"></div></div>
+        <figcaption><b>外观</b><span>12 种预设主题色加自定义，玻璃质感可调</span></figcaption></figure>
+      <figure class="rv" style="--d:320ms"><div class="phone"><div class="scr"><img src="shots/08_backup.webp" alt="备份与恢复截图" width="640" height="1415" loading="lazy" decoding="async"></div></div>
+        <figcaption><b>备份与恢复</b><span>单文件导出导入，恢复前可预览</span></figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 小而美 · 开源 ================= -->
+<section class="block" id="open" style="padding-top:20px">
+  <div class="wrap pair">
+    <div class="tile-card glassy rv">
+      <svg class="mbring" viewBox="0 0 800 800" aria-hidden="true"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#006bdf"/><stop offset="1" stop-color="#2bb894"/></linearGradient></defs>
+        <circle cx="400" cy="400" r="380" fill="none" stroke="rgba(0,107,223,.08)" stroke-width="4"/>
+        <circle id="ringArc" cx="400" cy="400" r="380" fill="none" stroke="url(#rg)" stroke-width="6" stroke-linecap="round" transform="rotate(-90 400 400)" stroke-dasharray="2388" stroke-dashoffset="2388" style="transition:stroke-dashoffset 1.8s cubic-bezier(.16,1,.3,1) .2s"/></svg>
+      <div class="k">安装包仅</div>
+      <div class="mb"><b id="mbNum">2.5</b><span>MB</span></div>
+      <div class="t">真正「小而美」。</div>
+    </div>
+    <div class="tile-card glassy rv" style="--d:100ms" id="mitCard">
+      <h3>MIT 协议，<br><b class="hl">开源免费</b>。</h3>
+      <p class="small" style="position:relative;margin:16px 0 0">代码全部公开，可以自由使用、修改和分发。</p>
+      <a class="btn sec" href="https://github.com/enenhhh/smartschedule" rel="noopener"><svg class="ico"><use href="#i-gh"/></svg>github.com/enenhhh/smartschedule</a>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 隐私 ================= -->
+<section class="block" id="privacy" style="padding-top:40px">
+  <div class="wrap">
+    <div class="eyebrow rv">隐私</div>
+    <h2 class="title" data-split>课表只在<b class="hl">你的手机</b>里。</h2>
+    <div class="trio">
+      <div class="glassy rv"><span class="ti"><svg class="ico"><use href="#i-lock"/></svg></span><h3>没有账号</h3><p>不注册、不登录，也没有应用自己的用户后台。课表、作业、设置都存在本机。</p></div>
+      <div class="glassy rv" style="--d:80ms"><span class="ti"><svg class="ico"><use href="#i-wifi"/></svg></span><h3>联网只做四件事</h3><p>获取天气、使用分享码、检查更新，以及你主动点「定位当前城市」时识别城市。</p></div>
+      <div class="glassy rv" style="--d:160ms"><span class="ti"><svg class="ico"><use href="#i-pin"/></svg></span><h3>位置可选且模糊</h3><p>只申请大致位置，不做后台定位，也不用 GPS。不想用，手动选城市就行。</p></div>
+    </div>
+    <p class="fine rv">首次使用需阅读并同意 <a href="disclaimer.html">免责条款</a> 与 <a href="notice.html">用户须知</a>。智能课表是个人维护的工具，不是学校教务系统。</p>
+  </div>
+</section>
+
+<!-- ================= 下载 ================= -->
+<section class="block" id="download" style="padding-top:40px">
+  <div class="wrap">
+    <div class="dl glassy rv">
+      <div class="icon" data-icon="96"></div>
+      <h2 class="title" data-split style="margin-top:0">现在就装上。</h2>
+      <p class="lead" style="margin-left:auto;margin-right:auto">从 GitHub Release 下载，应用内更新也默认走 GitHub。与旧版同一签名，直接覆盖安装，数据不丢。</p>
+      <div class="cta">
+        <a class="btn pri" id="dlBtn" href="https://github.com/enenhhh/smartschedule/releases/download/v5.3/smartschedule-5.3.apk"><svg class="ico"><use href="#i-down"/></svg><span id="dlText">下载最新版 APK</span></a>
+        <a class="btn sec" href="https://github.com/enenhhh/smartschedule/releases" rel="noopener">全部版本</a>
+      </div>
+      <div class="meta">
+        <span>版本 <b id="dlVer">5.3</b></span><span>大小 <b id="dlSize">2.5 MB</b></span><span>需要 <b>Android 8.0+</b></span><span id="dlDateWrap" hidden>发布于 <b id="dlDate"></b></span>
+      </div>
+      <ol class="howto">
+        <li><b>1 · 下载</b>点上面的按钮，保存 APK。</li>
+        <li><b>2 · 允许安装</b>系统提示时，允许浏览器或文件管理器「安装未知应用」。</li>
+        <li><b>3 · 配置</b>按上面的三步配置，或输入同学的分享码。</li>
+      </ol>
+      <p class="hash" id="dlHash" hidden></p>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <a class="brand" href="#top"><span class="mark" data-icon="36"></span>智能课表</a>
+    <nav aria-label="页脚">
+      <a href="https://github.com/enenhhh/smartschedule" rel="noopener">GitHub</a>
+      <a href="https://github.com/enenhhh/smartschedule/releases" rel="noopener">版本发布</a>
+      <a href="https://github.com/enenhhh/smartschedule/issues" rel="noopener">反馈问题</a>
+      <a href="https://github.com/enenhhh/smartschedule/blob/main/LICENSE" rel="noopener">MIT 许可证</a>
+      <a href="disclaimer.html">免责条款</a>
+      <a href="notice.html">用户须知</a>
+    </nav>
+    <span>开发者 恩恩hhh · © 2026</span>
+  </div>
+</footer>
+
+<script src="assets/lib.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>
