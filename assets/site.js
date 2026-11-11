@@ -419,7 +419,7 @@
       if (!apk) return;
       q('#dlBtn').href = apk.browser_download_url;
       q('#dlText').textContent = `下载 ${rel.tag_name} APK`;
-      q('#dlVer').textContent = String(rel.tag_name).replace(/^v/, '');
+      q('#dlVer').textContent = q('#heroVer').textContent = String(rel.tag_name).replace(/^v/, '');
       q('#dlSize').textContent = (apk.size / 1048576).toFixed(1) + ' MB';
       if (rel.published_at) { q('#dlDate').textContent = new Date(rel.published_at).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' }); q('#dlDateWrap').hidden = false; }
       if (apk.digest && /^sha256:/.test(apk.digest)) { const h = q('#dlHash'); h.textContent = 'SHA-256  ' + apk.digest.slice(7); h.hidden = false; }
