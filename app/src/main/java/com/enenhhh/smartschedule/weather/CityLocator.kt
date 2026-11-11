@@ -80,7 +80,7 @@ object CityLocator {
         conn.readTimeout = 12_000
         conn.requestMethod = "GET"
         conn.instanceFollowRedirects = false
-        conn.setRequestProperty("User-Agent", "SmartSchedule/5.2 (Android)")
+        conn.setRequestProperty("User-Agent", "SmartSchedule/5.3 (Android)")
         return try {
             val code = conn.responseCode
             if (code == 429) throw IllegalStateException("定位请求较多，请稍后重试或手动输入城市")
